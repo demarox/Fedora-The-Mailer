@@ -3,19 +3,22 @@ import shelve
 import wx
 import os
 import smtplib
+import re
+import urllib2
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
 from email.Utils import COMMASPACE, formatdate
 from email import Encoders
-attos = ['exer.py']
+regexion = "^.+\\@(\\[?)[a-zA-Z0-9\\-\\.]+\\.([a-zA-Z]{2,3}|[0-9]{1,3})(\\]?)$"
+attos = []
 wildcard = "Python source (*.py; *.pyc)|*.py;*.pyc|" \
          "All files (*.*)|*.*"
 SEND_ATT,OPEN_PROMPT,SAVE_PROMT, CLOSE,DEF_ACC,CUST_ACC = 1,2,3,4,5,6
 class RaiseAuth(wx.Dialog):
-	def __init__(self):
+	def __init__(self,cancel_view = False):
 		super(RaiseAuth, self).__init__(None)
-#		self.Aproveaccount()
+		self.cancel_view = cancel_view
 		self.DialogUI()
 		self.SetSize((300, 150))
 		self.SetTitle("Authenticate please...")
@@ -27,8 +30,8 @@ class RaiseAuth(wx.Dialog):
 		user_text = wx.StaticText(pan, label = "User")
 #falta definir cuadro de texto
 		user_box.Add(user_text,0,wx.ALL,5)
-		user_camp = wx.TextCtrl(pan)
-		user_box.Add(user_camp,wx.EXPAND)
+		self.user_camp = wx.TextCtrl(pan)
+		user_box.Add(self.user_camp,wx.EXPAND)
 		pan.SetSizer(user_box)
 		vbox.Add(pan,wx.ALIGN_CENTER|wx.TOP, border = 4)
 
@@ -36,22 +39,43 @@ class RaiseAuth(wx.Dialog):
 		password_text = wx.StaticText(pan1, label = "Password")
 #falta definir cuadro de texto
 		password_box.Add(password_text,0,wx.ALL,5)
-		password_camp = wx.TextCtrl(pan1)
-		password_box.Add(password_camp,wx.EXPAND)
+		self.password_camp = wx.TextCtrl(pan1,style=wx.TE_PASSWORD)
+		password_box.Add(self.password_camp,wx.EXPAND)
 		pan1.SetSizer(password_box)
 		vbox.Add(pan1,wx.ALIGN_CENTER, border = 4)
 
 		opt_box = wx.BoxSizer(wx.HORIZONTAL)
+		if self.cancel_view:
+			opt_cancel = wx.Button(self, wx.ID_CANCEL  )
+			opt_box.Add(opt_cancel)
 		opt_ok = wx.Button(self, wx.ID_OK  )
 		opt_box.Add(opt_ok, flag =  wx.LEFT, border = 5)
 		vbox.Add(opt_box, flag = wx.ALIGN_RIGHT|wx.BOTTOM, border = 4)
 		self.SetSizer(vbox)
 
 		#Binder
-#		self.Bind()
-#		self.Bind()
-	def it_works(self):
-		pass
+		self.Bind(wx.EVT_BUTTON, self.it_works, opt_ok)
+	def it_works(self,e):
+#Authentication		
+		self.get_user = self.user_camp.GetValue()
+		self.get_pass = self.password_camp.GetValue()
+		try:
+			smtpserver = smtplib.SMTP("smtp.gmail.com",587)
+			smtpserver.ehlo()
+			smtpserver.starttls()
+			smtpserver.ehlo
+			smtpserver.login(self.get_user, self.get_pass)
+			smtpserver.close()
+		except smtplib.SMTPAuthenticationError:
+			wx.MessageBox('something went wrong','Introduce your keys again', wx.OK | wx.ICON_INFORMATION)
+			self.user_camp.SetValue('')
+			self.password_camp.SetValue('')
+		else:
+			connection = shelve.open('account.dat')
+			connection['username'] = self.get_user
+			connection['password'] = self.get_pass
+			connection.close()
+			self.Destroy()
 class DialogGener(wx.Dialog):
 	def __init__(self):
 		super(DialogGener, self).__init__(None)
@@ -78,6 +102,7 @@ class DialogGener(wx.Dialog):
 		vbox.Add(opt_box, flag = wx.ALIGN_RIGHT|wx.BOTTOM, border = 4)
 		self.SetSizer(vbox)
 
+#		self.Bind(wx.EVT_BUTTON, self.)
 
 class Fedora(wx.Frame):
 	def __init__(self, title= 'Fedora'):
@@ -90,8 +115,8 @@ class Fedora(wx.Frame):
 		menubar = wx.MenuBar()
 		filemenu = wx.Menu()
 		send_att = wx.MenuItem(filemenu,SEND_ATT, '&Send Attachment \t Select File')
-		open_prompt = wx.MenuItem(filemenu,OPEN_PROMPT, '&Open Prompt \t Open Prompt')
-		save_prompt = wx.MenuItem(filemenu, SAVE_PROMT, '&Save Prompt\t save Prompt')
+		open_prompt = wx.MenuItem(filemenu,OPEN_PROMPT, '&Open Draft \t Open Draft')
+		save_prompt = wx.MenuItem(filemenu, SAVE_PROMT, '&Save Draft\t save draft')
 		close_opt = wx.MenuItem(filemenu, CLOSE, '&Close\tClose')
 		filemenu.AppendItem(send_att)
 		filemenu.AppendItem(save_prompt)
@@ -99,9 +124,7 @@ class Fedora(wx.Frame):
 		filemenu.AppendItem(close_opt)
 
 		viewmenu = wx.Menu()
-		def_acc = wx.MenuItem(viewmenu, DEF_ACC, '&Use Default\t Use Default')
-		cust_acc = wx.MenuItem(viewmenu, CUST_ACC, '&Use Custom\t Use Custom')
-		viewmenu.AppendItem(def_acc)
+		cust_acc = wx.MenuItem(viewmenu, CUST_ACC, '&Change Account\t Change Account')
 		viewmenu.AppendItem(cust_acc)
 
 		menubar.Append(filemenu, '&File')
@@ -164,46 +187,80 @@ class Fedora(wx.Frame):
 		#status declaration
 		self.statbar = self.CreateStatusBar()
 		self.statbar.Hide()
-		self.Bind(wx.EVT_MENU, self.spec_routes_on_attachment, open_prompt)
-		self.Bind(wx.EVT_MENU, self.saveFile, save_prompt)
-		self.Bind(wx.EVT_MENU, self.handleDialog, send_att)
+		#Binder
+		self.Bind(wx.EVT_MENU, self.attach_file, send_att)
+		self.Bind(wx.EVT_MENU, self.on_open, open_prompt)
+		self.Bind(wx.EVT_MENU, self.on_save, save_prompt)
+		self.Bind(wx.EVT_MENU, self.on_quit , close_opt)
+		self.Bind(wx.EVT_MENU, self.change_account, cust_acc)
 		self.Bind(wx.EVT_BUTTON, self.send_mail_instant , send_button)
 
+
 	#Fedora popups
-	def successDialog(self, e):
+	def successDialog(self):
 		wx.MessageBox('Success at sending!','Good!', wx.OK | wx.ICON_INFORMATION)
-	def handleDialog(self, e):
+	def handleDialog(self):
 		wx.MessageBox('Error at sending', 'OMAIGA!', wx.OK | wx.ICON_ERROR)
-	def spec_routes_on_attachment(self,e):
-		spec_route_window = DialogGener('send_att')
-		spec_route_window.ShowModal()
-		spec_route_window.Destroy()
-	def saveFile(self,e):
-		#no current directory
+	def attach_file(self,e):
+		dlg = wx.FileDialog(self, message="Open a draft ...",defaultDir=os.getcwd(), defaultFile="", wildcard=wildcard, style=wx.OPEN)	
+		if dlg.ShowModal() == wx.ID_OK:
+			paths = dlg.GetPaths()
+			print paths
+		dlg.Destroy	
+	def on_open(self,e):
+		dlg = wx.FileDialog(self, message="Open a draft ...",defaultDir=os.getcwd(), defaultFile="", wildcard=wildcard, style=wx.OPEN)	
+		if dlg.ShowModal() == wx.ID_OK:
+			paths = dlg.GetPaths()
+			print paths
+		dlg.Destroy	
+	def on_save(self,e):
 		dlg = wx.FileDialog(self, message="Save file as ...",defaultDir=os.getcwd(), defaultFile="", wildcard=wildcard, style=wx.SAVE)	
 		if dlg.ShowModal() == wx.ID_OK:
 			paths = dlg.GetPaths()
 			print paths
 		dlg.Destroy	
+	def change_account(self,e):
+		changer =RaiseAuth(True)
+		changer.ShowModal()
+		changer.Destroy()
 	def send_mail_instant(self, e):
 		destiny_get = self.destiny_camp.GetValue()
 		subject_get = self.sub_camp.GetValue()
 		body_get = self.body_camp.GetValue()
-		a_mail = Mail(#this data is not for github :)
-		a_mail.send_it()
+		fol = re.match(regexion,destiny_get)
+		if fol is None :
+			wx.MessageBox('No Destiny?','Please insert a valid destiny', wx.OK | wx.ICON_INFORMATION)
+		elif not destiny_get :
+			wx.MessageBox('No Destiny?','Please insert a valid destiny', wx.OK | wx.ICON_INFORMATION)	
+		elif not subject_get:
+			wx.MessageBox('No subject?','Please insert a subject', wx.OK | wx.ICON_INFORMATION)
+		elif not body_get:	
+			wx.MessageBox('No body?','Please insert something?', wx.OK | wx.ICON_INFORMATION)
+		else:
+			if on_con() :
+				s =shelve.open('account.dat')
+				a_mail = Mail(s['username'],destiny_get,subject_get,body_get,s['password'],*attos)
+				a_mail.send_it()
+				s.close()
+				self.successDialog()
+				self.statbar.SetStatusText(str("Success at sending mail to",destiny_get))
+			else:
+				self.handleDialog()	
+				self.statbar.SetStatusText("Error at sending mail")	
 	def Aproveaccount(self):
 		account_dat = shelve.open('account.dat')
 		try:
 			username = account_dat['username']
 			password_key = account_dat['password']
+			account_dat.close()	
 		except KeyError:
 			understand =RaiseAuth()
 			understand.ShowModal()
 			understand.Destroy()
 		else:
 			pass
-		finally:
-			account_dat.close()		
+	def on_quit(self,e):
+		self.Close()			
 class Mail(object):
 
 	def __init__(self, account, reciever,subject, text,password, *attachments ):
@@ -242,7 +299,12 @@ class Mail(object):
 		smtpserver.close()
 	def	getpwd(self):
 		return self.__password
-						
+def on_con():
+    try:
+        response=urllib2.urlopen('http://example.com',timeout=4)
+        return True
+    except urllib2.URLError as err: pass
+    return False						
 #superabstraction        
 if __name__ == '__main__':
 	app = wx.App()
