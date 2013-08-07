@@ -10,11 +10,13 @@ from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
 from email.Utils import COMMASPACE, formatdate
 from email import Encoders
+from xml.dom.minidom import parseString
+trimmer='[]'
 regexion = "^.+\\@(\\[?)[a-zA-Z0-9\\-\\.]+\\.([a-zA-Z]{2,3}|[0-9]{1,3})(\\]?)$"
 attos = []
-wildcard = "Python source (*.py; *.pyc)|*.py;*.pyc|" \
+wildcard = "Python source (*.xml; *.xml)|*.xml;*.xml|" \
          "All files (*.*)|*.*"
-SEND_ATT,OPEN_PROMPT,SAVE_PROMT, CLOSE,DEF_ACC,CUST_ACC = 1,2,3,4,5,6
+SEND_ATT,OPEN_PROMPT,SAVE_PROMT, CLOSE,DEF_ACC,CUST_ACC,RESET_ALL = 1,2,3,4,5,6,7
 class RaiseAuth(wx.Dialog):
 	def __init__(self,cancel_view = False):
 		super(RaiseAuth, self).__init__(None)
@@ -125,7 +127,9 @@ class Fedora(wx.Frame):
 
 		viewmenu = wx.Menu()
 		cust_acc = wx.MenuItem(viewmenu, CUST_ACC, '&Change Account\t Change Account')
+		reset_all = wx.MenuItem(viewmenu, RESET_ALL, '&Reset \t Reset')
 		viewmenu.AppendItem(cust_acc)
+		viewmenu.AppendItem(reset_all)
 
 		menubar.Append(filemenu, '&File')
 		menubar.Append(viewmenu, '&Edit')
@@ -186,14 +190,15 @@ class Fedora(wx.Frame):
 
 		#status declaration
 		self.statbar = self.CreateStatusBar()
-		self.statbar.Hide()
 		#Binder
 		self.Bind(wx.EVT_MENU, self.attach_file, send_att)
 		self.Bind(wx.EVT_MENU, self.on_open, open_prompt)
 		self.Bind(wx.EVT_MENU, self.on_save, save_prompt)
 		self.Bind(wx.EVT_MENU, self.on_quit , close_opt)
 		self.Bind(wx.EVT_MENU, self.change_account, cust_acc)
+		self.Bind(wx.EVT_MENU, self.reseter, reset_all)
 		self.Bind(wx.EVT_BUTTON, self.send_mail_instant , send_button)
+
 
 
 	#Fedora popups
@@ -202,23 +207,60 @@ class Fedora(wx.Frame):
 	def handleDialog(self):
 		wx.MessageBox('Error at sending', 'OMAIGA!', wx.OK | wx.ICON_ERROR)
 	def attach_file(self,e):
-		dlg = wx.FileDialog(self, message="Open a draft ...",defaultDir=os.getcwd(), defaultFile="", wildcard=wildcard, style=wx.OPEN)	
+		dlg = wx.FileDialog(self, message="Open a File...",defaultDir=os.getcwd(), defaultFile="",  style=wx.OPEN)	
 		if dlg.ShowModal() == wx.ID_OK:
-			paths = dlg.GetPaths()
-			print paths
+			path = dlg.GetPaths()
+			path = "".join(c for c in path if c not in trimmer)
+#			print path
+			attos.append(str(path))
+			self.statbar.SetStatusText("File Correctly Added!")
 		dlg.Destroy	
+		
 	def on_open(self,e):
-		dlg = wx.FileDialog(self, message="Open a draft ...",defaultDir=os.getcwd(), defaultFile="", wildcard=wildcard, style=wx.OPEN)	
+		dlg = wx.FileDialog(self, message="Open a draft...",defaultDir=os.getcwd(), defaultFile="",  style=wx.OPEN)	
 		if dlg.ShowModal() == wx.ID_OK:
-			paths = dlg.GetPaths()
-			print paths
+			path = dlg.GetPaths()
+			path = "".join(c for c in path if c not in trimmer)
+			file_read = open(path,'r')
+			d = file_read.read()
+			file_read.close()
+			parse_d = parseString(d)
+			to_tag = parse_d.getElementsByTagName('to')[0].toxml()
+			to_data = to_tag.replace('<to>','').replace('</to>','')		
+			subject_tag = parse_d.getElementsByTagName('subject')[0].toxml()
+			subject_data = subject_tag.replace('<subject>','').replace('</subject>','')			
+			body_tag = parse_d.getElementsByTagName('body')[0].toxml()
+			body_data = body_tag.replace('<body>','').replace('</body>','')
+			
+			self.destiny_camp.SetValue(to_data)
+			self.sub_camp.SetValue(subject_data)
+			self.body_camp.SetValue(body_data)
 		dlg.Destroy	
+
 	def on_save(self,e):
-		dlg = wx.FileDialog(self, message="Save file as ...",defaultDir=os.getcwd(), defaultFile="", wildcard=wildcard, style=wx.SAVE)	
+		dlg = wx.FileDialog(self, message="Save Draft as...",defaultDir=os.getcwd(), defaultFile="", wildcard=wildcard, style=wx.SAVE)	
 		if dlg.ShowModal() == wx.ID_OK:
-			paths = dlg.GetPaths()
-			print paths
+			path = dlg.GetPaths()
+			path = "".join(c for c in path if c not in trimmer)
+			destiny_get = self.destiny_camp.GetValue()
+			subject_get = self.sub_camp.GetValue()
+			body_getter = self.body_camp.GetValue()
+			file_saver = open(path,'w')
+			file_saver.write('<?xml version ="1.0" encoding="utf-8" ?>\n')
+			file_saver.write("<mail>")
+			file_saver.write("\t<to>"+destiny_get+"</to>\n")
+			file_saver.write("\t<subject>"+subject_get+"</subject>\n")
+			file_saver.write("\t<body>"+body_getter+"</body>\n")
+			file_saver.write("</mail>")
+			file_saver.close
+			self.statbar.SetStatusText("Draft saved!")
 		dlg.Destroy	
+	def reseter(self,e):
+		self.destiny_camp.SetValue('')
+		self.sub_camp.SetValue('')
+		self.body_camp.SetValue('')
+		attos = []
+		self.statbar.SetStatusText('Clear!')
 	def change_account(self,e):
 		changer =RaiseAuth(True)
 		changer.ShowModal()
@@ -243,8 +285,8 @@ class Fedora(wx.Frame):
 				a_mail.send_it()
 				s.close()
 				self.successDialog()
-				self.statbar.SetStatusText(str("Success at sending mail to",destiny_get))
-			else:
+				self.statbar.SetStatusText(str("Success at sending mail to" + destiny_get))
+			else: 
 				self.handleDialog()	
 				self.statbar.SetStatusText("Error at sending mail")	
 	def Aproveaccount(self):
