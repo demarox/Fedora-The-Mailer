@@ -1,6 +1,7 @@
 #Fedora
 import shelve
 import wx
+import pdb
 import os
 import smtplib
 import re
@@ -11,8 +12,9 @@ from email.MIMEText import MIMEText
 from email.Utils import COMMASPACE, formatdate
 from email import Encoders
 from xml.dom.minidom import parseString
-c = shelve.open('directory_cache.dat')
-directory_cache_list = c['direc_list']
+
+c = shelve.open('d_cache.dat')
+directory_cache_list = c.values()
 c.close()
 trimmer='[]'
 supported_regex = "\w+([-+.]\w+)*@(yahoo|gmail|hotmail|googlemail)\.com"
@@ -100,12 +102,12 @@ class RaiseAuth(wx.Dialog):
 				self.Destroy()
 		else:
 			wx.MessageBox('Only gmail, hotmail, and yahoo! are used','Introduce a valid mail', wx.OK | wx.ICON_INFORMATION)	
-
 class DropTarget(wx.FileDropTarget):
-	def __init__(self, pan,parent):
+	def __init__(self,parent):
 		wx.FileDropTarget.__init__(self)
 		self.parent = parent
 	def OnDropFiles(self, x, y, filenames):
+		self.parent.SetInsertionPointEnd()
 		for filepath in filenames:
 			self.parent.updateFiles(filepath)
 
@@ -120,23 +122,23 @@ class Fedora(wx.Frame):
 		#menu
 		menubar = wx.MenuBar()
 		filemenu = wx.Menu()
-		send_att = wx.MenuItem(filemenu,SEND_ATT, '&Send Attachment \t Select File')
-		open_prompt = wx.MenuItem(filemenu,OPEN_PROMPT, '&Open Draft \t Open Draft')
-		save_prompt = wx.MenuItem(filemenu, SAVE_PROMT, '&Save Draft\t save draft')
-		close_opt = wx.MenuItem(filemenu, CLOSE, '&Close\tClose')
+		send_att = wx.MenuItem(filemenu,SEND_ATT, '&Send Attachment \tCtrl+A')
+		open_prompt = wx.MenuItem(filemenu,OPEN_PROMPT, '&Open Draft \tCtrl+O')
+		save_prompt = wx.MenuItem(filemenu, SAVE_PROMT, '&Save Draft\tCtrl+S')
+		close_opt = wx.MenuItem(filemenu, CLOSE, '&Close\tCtrl+C')
 		filemenu.AppendItem(send_att)
 		filemenu.AppendItem(save_prompt)
 		filemenu.AppendItem(open_prompt)
 		filemenu.AppendItem(close_opt)
 
 		editmenu = wx.Menu()
-		cust_acc = wx.MenuItem(editmenu, CUST_ACC, '&Change Account\t Change Account')
-		reset_all = wx.MenuItem(editmenu, RESET_ALL, '&Reset \t Reset')
+		cust_acc = wx.MenuItem(editmenu, CUST_ACC, '&Change Account\tAlt+C')
+		reset_all = wx.MenuItem(editmenu, RESET_ALL, '&Reset \tAlt+R')
 		editmenu.AppendItem(cust_acc)
 		editmenu.AppendItem(reset_all)
 
 		viewmenu = wx.Menu()
-		my_acc = wx.MenuItem(viewmenu,MY_ACC,'&My Account\tMy Account')
+		my_acc = wx.MenuItem(viewmenu,MY_ACC,'&My Account\tCtrl+M')
 		viewmenu.AppendItem(my_acc)
 
 		menubar.Append(filemenu, '&File')
@@ -157,7 +159,7 @@ class Fedora(wx.Frame):
 		destiny_text  = wx.StaticText(panel, label = "To :")
 #		destiny_text.SetFont(font)
 		destiny_box.Add(destiny_text, flag = wx.RIGHT, border = 5)
-		self.destiny_camp =  wx.ComboBox(panel, -1, choices = lst, style=wx.TE_PROCESS_ENTER)
+		self.destiny_camp =  wx.ComboBox(panel, -1, choices = directory_cache_list, style=wx.FRAME_NO_TASKBAR|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 		destiny_box.Add(self.destiny_camp, proportion = 1)
 		box.Add(destiny_box, flag = wx.EXPAND | wx.RIGHT | wx.LEFT| wx.TOP ,border = 8)
 		box.Add((-1,10))
@@ -179,26 +181,23 @@ class Fedora(wx.Frame):
 		
 		#options
 		opt_box = wx.BoxSizer(wx.HORIZONTAL)
-		check_raw = wx.CheckBox(panel, label = " raw ")
-#		check_raw.SetFont(font)
-		opt_box.Add(check_raw)
 		check_localhost = wx.CheckBox(panel, label = " localhost ")
 #		check_localhost.SetFont(font)
 		opt_box.Add(check_localhost)
 		box.Add(opt_box, flag =  wx.LEFT  , border = 10 )
 		box.Add((-1,10))
 		#file_viewer
+		text_drop = wx.BoxSizer(wx.HORIZONTAL)
+		lbl = wx.StaticText(panel, label="Drag some files here:")
+		text_drop.Add(lbl)
+		box.Add(text_drop)
 
 		file_drop = wx.BoxSizer(wx.HORIZONTAL)
-		file_drop_target = DropTarget(panel,self)
-		lbl = wx.StaticText(panel, label="Drag some files here:")
+		file_drop_target = DropTarget(self)
 		self.fileTextCtrl = wx.TextCtrl(panel,style=wx.TE_MULTILINE|wx.HSCROLL|wx.TE_READONLY)	
 		self.fileTextCtrl.SetDropTarget(file_drop_target)
-		lbl.SetDropTarget(file_drop_target)	
-		file_drop.Add(lbl)
 		file_drop.Add(self.fileTextCtrl, proportion = 1, flag = wx.EXPAND)
-		box.Add(file_drop, flag = wx.EXPAND| wx.RIGHT | wx.LEFT, border = 4)
-
+		box.Add(file_drop, 1, wx.EXPAND|wx.ALL, 5)
 		box.Add((-1,10))
 		#send
 		
@@ -210,6 +209,7 @@ class Fedora(wx.Frame):
 		panel.SetSizer(box)
 		#status declaration
 		self.statbar = self.CreateStatusBar()
+
 		#Binder
 		self.Bind(wx.EVT_MENU, self.attach_file, send_att)
 		self.Bind(wx.EVT_MENU, self.on_open, open_prompt)
@@ -219,7 +219,10 @@ class Fedora(wx.Frame):
 		self.Bind(wx.EVT_MENU, self.reseter, reset_all)
 		self.Bind(wx.EVT_MENU, self.account_data, my_acc)
 		self.Bind(wx.EVT_BUTTON, self.send_mail_instant , send_button)
-
+		self.Bind(wx.EVT_TEXT,self.select_mails ,self.destiny_camp)
+		#Accelerators
+		accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL,  ord('A'), send_att.GetId() ),(wx.ACCEL_CTRL,  ord('S'), save_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('O'), open_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('C'), close_opt.GetId() ),(wx.ACCEL_ALT,  ord('C'), cust_acc.GetId() ),(wx.ACCEL_ALT,  ord('R'), reset_all.GetId() ),(wx.ACCEL_CTRL,  ord('M'), my_acc.GetId() )])
+		self.SetAcceleratorTable(accel_tbl)
 
 
 	#Fedora popups
@@ -286,6 +289,8 @@ class Fedora(wx.Frame):
 		changer =RaiseAuth(True)
 		changer.ShowModal()
 #		changer.Destroy()
+	def SetInsertionPointEnd(self):
+		self.fileTextCtrl.SetInsertionPointEnd()
 	def updateFiles(self,path):
 			attos.append(str(path))
 			splitter = path.split('/')
@@ -303,10 +308,20 @@ class Fedora(wx.Frame):
 		account_info.AddDeveloper('Demarox')
 		wx.AboutBox(account_info)
 		account_dat.close()
+	def select_mails(self,e):
+			self.destiny_camp.Clear()
+			self.destiny_camp.SetInsertionPointEnd()
+			destiny_get = self.destiny_camp.GetValue()
+			for element in directory_cache_list:
+				fol = re.match(destiny_get,element)
+				if fol :
+					self.destiny_camp.Append(element)
+						
 	def send_mail_instant(self, e):
 		destiny_get = self.destiny_camp.GetValue()
 		subject_get = self.sub_camp.GetValue()
 		body_get = self.body_camp.GetValue()
+		if_anonymous = check_localhost.GetValue()
 		fol = re.match(regexion,destiny_get)
 		if fol is None :
 			wx.MessageBox('No Destiny?','Please insert a valid destiny', wx.OK | wx.ICON_INFORMATION)
@@ -325,9 +340,9 @@ class Fedora(wx.Frame):
 				self.successDialog()
 				self.statbar.SetStatusText(str("Success at sending mail to " + destiny_get))
 				#Cache for name directory
-				c = shelve.open('directory_cache.dat')
+				c = shelve.open('d_cache.dat')
 				
-				c['direc_list'].append(str(destiny_get))	
+				c[destiny_get] = destiny_get
 				c.close()
 			else: 
 				self.handleDialog()	
