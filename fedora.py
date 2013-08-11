@@ -1,10 +1,13 @@
 #Fedora
 import shelve
 import wx
+import wx.combo
 import pdb
 import os
 import smtplib
 import re
+import string
+import random
 import urllib2
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
@@ -12,6 +15,7 @@ from email.MIMEText import MIMEText
 from email.Utils import COMMASPACE, formatdate
 from email import Encoders
 from xml.dom.minidom import parseString
+import wx.lib.scrolledpanel as scroll
 
 c = shelve.open('d_cache.dat')
 directory_cache_list = c.values()
@@ -25,47 +29,90 @@ regexion = "^.+\\@(\\[?)[a-zA-Z0-9\\-\\.]+\\.([a-zA-Z]{2,3}|[0-9]{1,3})(\\]?)$"
 attos = []
 wildcard = "xml file (*.xml; *.xml)|*.xml;*.xml|" \
          "All files (*.*)|*.*"
-SEND_ATT,OPEN_PROMPT,SAVE_PROMT, CLOSE,DEF_ACC,CUST_ACC,RESET_ALL,MY_ACC = 1,2,3,4,5,6,7,8
-class RaiseAuth(wx.Dialog):
-	def __init__(self,cancel_view = False):
-		super(RaiseAuth, self).__init__(None)
+SEND_ATT,OPEN_PROMPT,SAVE_PROMT, CLOSE,DEF_ACC,CUST_ACC,RESET_ALL,MY_ACC,MAN_F = 1,2,3,4,5,6,7,8,9
+		
+class Gauger(wx.Frame):
+	def __init__(self,parent,task_range):
+		super(Gauger, self).__init__(None)
+		self.parent = parent
+		self.task_range = task_range
+		self.GaugeBox()
+		self.Centre()
+		self.Show(True)	
+	def GaugeBox(self):
+		panel = wx.Panel(self)
+		bmp2 = wx.Image('img/gauge.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		panel.bitmap2 = wx.StaticBitmap(panel, -1, bmp2, (0, 0))
+		vbox = wx.BoxSizer(wx.VERTICAL)
+		hbox1 = wx.BoxSizer(wx.HORIZONTAL)
+		hbox2 = wx.BoxSizer(wx.HORIZONTAL)
+		vbox.Add(-1,20)
+		self.gauge = wx.Gauge(panel, range=self.task_range, size=(250, 50))
+		self.text = wx.StaticText(panel, label='Sending...')
+		self.text.SetFont(self.parent.font)
+		hbox1.Add(self.gauge, proportion=1, flag=wx.ALIGN_CENTRE)
+		vbox.Add(hbox1,flag=wx.ALIGN_CENTRE|wx.TOP, border =5)
+		hbox2.Add(self.text)
+		vbox.Add((-1,10))
+		vbox.Add(hbox2,flag=wx.ALIGN_CENTRE)
+		panel.SetSizer(vbox)
+		self.SetSize((300, 130))
+		self.SetTitle('wx.Gauge')
+	def add_to_gauge(self):	
+		completed  = self.gauge.GetValue()
+		remain = self.task_range - completed
+		completed += 1
+		self.gauge.SetValue(completed)
+		self.text.SetLabel('Tasks Done ('+str(completed)+')')
+		if completed == self.task_range :
+			self.Destroy()
+	def Explode(self):
+			self.Destroy()							
+class RaiseAuth(wx.Frame):
+	def __init__(self,parent,cancel_view = False):
+		super(RaiseAuth, self).__init__(None,style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION ,size = (300,250), pos=(920,80))
+		self.parent = parent
 		self.cancel_view = cancel_view
 		self.DialogUI()
-		self.SetSize((300, 150))
 		self.SetTitle("Authenticate please...")
+		if cancel_view== False:
+			self.Centre()
+		self.Show()
 	def DialogUI(self):
 		pan = wx.Panel(self)
-		pan1 = wx.Panel(self)
+		bmp2 = wx.Image('img/dialog.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		pan.bitmap2 = wx.StaticBitmap(pan, -1, bmp2, (0, 0))
 		vbox = wx.BoxSizer(wx.VERTICAL)	
+		vbox.Add((-1,110))
+	
 		user_box = wx.BoxSizer(wx.HORIZONTAL)
 		user_text = wx.StaticText(pan, label = "User")
-#falta definir cuadro de texto
-		user_box.Add(user_text,0,wx.ALL,5)
+		user_text.SetFont(self.parent.font)
+		user_box.Add(user_text ,flag = wx.ALIGN_CENTRE)
 		self.user_camp = wx.TextCtrl(pan)
-		user_box.Add(self.user_camp,wx.EXPAND)
-		pan.SetSizer(user_box)
-		vbox.Add(pan,wx.ALIGN_CENTER|wx.TOP, border = 4)
-
+		user_box.Add(self.user_camp, flag = wx.ALIGN_CENTRE |wx.EXPAND|wx.ALL,proportion = 1)
+		vbox.Add(user_box,flag =  wx.ALIGN_CENTRE |wx.EXPAND|wx.RIGHT|wx.LEFT, border = 20)
+		vbox.Add((-1,10))
 		password_box = wx.BoxSizer(wx.HORIZONTAL)
-		password_text = wx.StaticText(pan1, label = "Password")
-#falta definir cuadro de texto
-		password_box.Add(password_text,0,wx.ALL,5)
-		self.password_camp = wx.TextCtrl(pan1,style=wx.TE_PASSWORD)
-		password_box.Add(self.password_camp,wx.EXPAND)
-		pan1.SetSizer(password_box)
-		vbox.Add(pan1,wx.ALIGN_CENTER, border = 4)
-
+		password_text = wx.StaticText(pan, label = "Password")
+		password_text.SetFont(self.parent.font)
+		password_box.Add(password_text)
+		self.password_camp = wx.TextCtrl(pan,style=wx.TE_PASSWORD)
+		password_box.Add(self.password_camp, proportion = 1)
+		vbox.Add(password_box,flag =  wx.ALIGN_CENTRE |wx.EXPAND|wx.RIGHT|wx.LEFT, border = 20)
+		vbox.Add((-1,10))
 		opt_box = wx.BoxSizer(wx.HORIZONTAL)
 		if self.cancel_view:
-			opt_cancel = wx.Button(self, wx.ID_CANCEL  )
+			opt_cancel = wx.Button(pan, wx.ID_CANCEL  )
 			opt_box.Add(opt_cancel)
-		opt_ok = wx.Button(self, wx.ID_OK  )
+		opt_ok = wx.Button(pan, wx.ID_OK  )
 		opt_box.Add(opt_ok, flag =  wx.LEFT, border = 5)
-		vbox.Add(opt_box, flag = wx.ALIGN_RIGHT|wx.BOTTOM, border = 4)
-		self.SetSizer(vbox)
+		vbox.Add(opt_box, flag = wx.ALIGN_CENTRE|wx.BOTTOM, border = 4)
+		pan.SetSizer(vbox)
 
 		#Binder
 		self.Bind(wx.EVT_BUTTON, self.it_works, opt_ok)
+		self.Bind(wx.EVT_BUTTON, self.close, opt_cancel)
 	def it_works(self,e):
 #Authentication		
 		self.get_user = self.user_camp.GetValue()
@@ -102,6 +149,8 @@ class RaiseAuth(wx.Dialog):
 				self.Destroy()
 		else:
 			wx.MessageBox('Only gmail, hotmail, and yahoo! are used','Introduce a valid mail', wx.OK | wx.ICON_INFORMATION)	
+	def close(self,e):
+		self.Close()	
 class DropTarget(wx.FileDropTarget):
 	def __init__(self,parent):
 		wx.FileDropTarget.__init__(self)
@@ -111,21 +160,75 @@ class DropTarget(wx.FileDropTarget):
 		for filepath in filenames:
 			self.parent.updateFiles(filepath)
 
+class Man_at_files(wx.Frame):
+	def __init__(self,parent):
+		super(Man_at_files, self).__init__(None,pos =(10,50), style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION|wx.CLOSE_BOX)
+		self.parent = parent
+		self.dict_button = {}
+		self.in_box = {}
+		self.dest_text = {}
+		self.FrameUI()
+		self.SetTitle('Files added')
+		self.SetSize((350,600))
+		self.Show()
+		
+	def FrameUI(self):
+		bmp = wx.Bitmap("img/close.png", wx.BITMAP_TYPE_ANY)
+		panel = wx.PyScrolledWindow(self,-1,style = wx.VSCROLL)
+		panel.SetScrollbars(0, 1, 0, 1)
+		panel.SetScrollRate( 1, 1 ) 
+		box = wx.BoxSizer(wx.VERTICAL)
+		bmp3 = wx.Image('img/file_man.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		panel.bitmap2 = wx.StaticBitmap(panel, -1, bmp3, (0, 0))
+		box.Add((-1,130))
+		for path in attos:
+			asc_id =self.id_generator()
+			self.in_box[path] = wx.BoxSizer(wx.HORIZONTAL)
+			label = '...'+path[-25:]
+			self.dest_text[path] = wx.StaticText(panel,label =label)
+			self.dest_text[path].SetFont(self.parent.font)
+			self.in_box[path].Add(self.dest_text[path])	
+			self.dict_button[path] = wx.BitmapButton(panel, id=wx.ID_ANY, style=wx.NO_BORDER, bitmap=bmp,size=(bmp.GetWidth()+5, bmp.GetHeight()+5))
+			self.dict_button[path].parameterVal = path
+			self.in_box[path].Add(self.dict_button[path],flag = wx.ALIGN_RIGHT,border =5)
+			box.Add(self.in_box[path],flag = wx.RIGHT|wx.LEFT|wx.ALIGN_RIGHT, border = 20)
+			box.Add((-1,10))
+			self.Bind(wx.EVT_BUTTON, self.destroy_file_path,self.dict_button[path])
+		panel.SetSizer(box)	
+	def id_generator(self,size=6, chars=string.ascii_uppercase + string.digits):
+		return ''.join(random.choice(chars) for x in range(size))	
+	def destroy_file_path(self,e):
+		button = e.GetEventObject()
+		idi = button.parameterVal
+		if idi in attos: 
+			self.parent.statbar.SetStatusText(idi+" removed")
+			attos.remove(idi)
+			self.dest_text[idi].Hide()
+			self.dict_button[idi].Hide()
+			self.in_box[idi].Remove(True)
 
+
+			self.parent.clear_and_update()
+	def Explode(self):
+		self.Destroy()		
+		
 class Fedora(wx.Frame):
 	def __init__(self, title= 'Fedora'):
-		super(Fedora, self).__init__(None,id= -1, title = title, style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION |wx.CLOSE_BOX, size= (500,500))
+		super(Fedora, self).__init__(None,id= -1, title = title, style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION |wx.CLOSE_BOX, size= (500,570))
 		self.GeneralUI()
 		self.Aproveaccount()
+		self.Centre()
 		self.Show()
 	def GeneralUI(self):
+		#background
 		#menu
+		self.font = wx.Font(15, wx.MODERN, wx.NORMAL, wx.BOLD)
 		menubar = wx.MenuBar()
 		filemenu = wx.Menu()
 		send_att = wx.MenuItem(filemenu,SEND_ATT, '&Send Attachment \tCtrl+A')
 		open_prompt = wx.MenuItem(filemenu,OPEN_PROMPT, '&Open Draft \tCtrl+O')
 		save_prompt = wx.MenuItem(filemenu, SAVE_PROMT, '&Save Draft\tCtrl+S')
-		close_opt = wx.MenuItem(filemenu, CLOSE, '&Close\tCtrl+C')
+		close_opt = wx.MenuItem(filemenu, CLOSE, '&Close\tCtrl+Q')
 		filemenu.AppendItem(send_att)
 		filemenu.AppendItem(save_prompt)
 		filemenu.AppendItem(open_prompt)
@@ -139,7 +242,9 @@ class Fedora(wx.Frame):
 
 		viewmenu = wx.Menu()
 		my_acc = wx.MenuItem(viewmenu,MY_ACC,'&My Account\tCtrl+M')
+		manage_files = wx.MenuItem(viewmenu,MAN_F,'&Manage Files\tCtrl+F')
 		viewmenu.AppendItem(my_acc)
+		viewmenu.AppendItem(manage_files)
 
 		menubar.Append(filemenu, '&File')
 		menubar.Append(editmenu, '&Edit')
@@ -148,63 +253,58 @@ class Fedora(wx.Frame):
 		
 		#layout
 		panel = wx.Panel(self)
-#		font = wx.SystemSettings_GetFont(self, wx.SYS_SYSTEM_FONT)
-
-#		font.SetPointSize(9)
 		box = wx.BoxSizer(wx.VERTICAL)
 
+		bmp1 = wx.Image('img/back.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		panel.bitmap1 = wx.StaticBitmap(panel, -1, bmp1, (0, 0))
+		box.Add((-1,110))
 		#destiny
-		lst = ['hd','eww']
 		destiny_box = wx.BoxSizer(wx.HORIZONTAL)
 		destiny_text  = wx.StaticText(panel, label = "To :")
-#		destiny_text.SetFont(font)
+		destiny_text.SetFont(self.font)
 		destiny_box.Add(destiny_text, flag = wx.RIGHT, border = 5)
-		self.destiny_camp =  wx.ComboBox(panel, -1, choices = directory_cache_list, style=wx.FRAME_NO_TASKBAR|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+		self.destiny_camp =  wx.ComboBox(panel, -1, choices = directory_cache_list)
+#		cp = ComboPopup()
+#		self.destiny_camp.SetPopupControl(cp)
 		destiny_box.Add(self.destiny_camp, proportion = 1)
-		box.Add(destiny_box, flag = wx.EXPAND | wx.RIGHT | wx.LEFT| wx.TOP ,border = 8)
+		box.Add(destiny_box, flag = wx.EXPAND | wx.RIGHT | wx.LEFT| wx.TOP ,border = 23)
 		box.Add((-1,10))
 		#sub
 		sub_box = wx.BoxSizer(wx.HORIZONTAL)
 		sub_text = wx.StaticText(panel, label = "Sub :")
-#		sub_text.SetFont(font)
+		sub_text.SetFont(self.font)
 		sub_box.Add(sub_text, flag = wx.RIGHT, border = 5)
 		self.sub_camp =  wx.TextCtrl(panel)
 		sub_box.Add(self.sub_camp, proportion = 1)
-		box.Add(sub_box, flag = wx.EXPAND | wx.RIGHT | wx.LEFT ,border = 8)      
+		box.Add(sub_box, flag = wx.EXPAND | wx.RIGHT | wx.LEFT ,border = 23)      
 		 #body
 		box.Add((-1,20))
 		body = wx.BoxSizer(wx.HORIZONTAL)
 		self.body_camp = wx.TextCtrl(panel,style = wx.TE_MULTILINE)
 		body.Add(self.body_camp, proportion = 1, flag = wx.EXPAND)
-		box.Add(body, flag = wx.EXPAND| wx.RIGHT | wx.LEFT, border = 4)
+		box.Add(body, flag = wx.EXPAND| wx.RIGHT | wx.LEFT, border = 23)
 		box.Add((-1,10))
-		
-		#options
-		opt_box = wx.BoxSizer(wx.HORIZONTAL)
-		check_localhost = wx.CheckBox(panel, label = " localhost ")
-#		check_localhost.SetFont(font)
-		opt_box.Add(check_localhost)
-		box.Add(opt_box, flag =  wx.LEFT  , border = 10 )
-		box.Add((-1,10))
+
 		#file_viewer
 		text_drop = wx.BoxSizer(wx.HORIZONTAL)
-		lbl = wx.StaticText(panel, label="Drag some files here:")
+		lbl = wx.StaticText(panel, label="Drag your files:")
+		lbl.SetFont(self.font)
 		text_drop.Add(lbl)
-		box.Add(text_drop)
+		box.Add(text_drop,flag = wx.RIGHT|wx.LEFT,border = 23)
 
 		file_drop = wx.BoxSizer(wx.HORIZONTAL)
 		file_drop_target = DropTarget(self)
-		self.fileTextCtrl = wx.TextCtrl(panel,style=wx.TE_MULTILINE|wx.HSCROLL|wx.TE_READONLY)	
+		self.fileTextCtrl = wx.TextCtrl(panel,style=wx.TE_MULTILINE|wx.TE_READONLY)	
 		self.fileTextCtrl.SetDropTarget(file_drop_target)
 		file_drop.Add(self.fileTextCtrl, proportion = 1, flag = wx.EXPAND)
-		box.Add(file_drop, 1, wx.EXPAND|wx.ALL, 5)
+		box.Add(file_drop, 1, wx.EXPAND|wx.ALL, 23)
 		box.Add((-1,10))
 		#send
 		
 		send_box = wx.BoxSizer(wx.HORIZONTAL)
 		send_button = wx.Button(panel,label= "Send!", size = (100,40))
-		send_box.Add(send_button, flag  = wx.RIGHT | wx.BOTTOM, border = 5)
-		box.Add(send_box, flag = wx.ALIGN_RIGHT |wx.LEFT, border = 10)
+		send_box.Add(send_button, flag  = wx.RIGHT | wx.BOTTOM)
+		box.Add(send_box, flag = wx.ALIGN_RIGHT |wx.LEFT|wx.RIGHT, border = 23)
 		
 		panel.SetSizer(box)
 		#status declaration
@@ -218,10 +318,11 @@ class Fedora(wx.Frame):
 		self.Bind(wx.EVT_MENU, self.change_account, cust_acc)
 		self.Bind(wx.EVT_MENU, self.reseter, reset_all)
 		self.Bind(wx.EVT_MENU, self.account_data, my_acc)
+		self.Bind(wx.EVT_MENU, self.manageFiles, manage_files)
 		self.Bind(wx.EVT_BUTTON, self.send_mail_instant , send_button)
 		self.Bind(wx.EVT_TEXT,self.select_mails ,self.destiny_camp)
 		#Accelerators
-		accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL,  ord('A'), send_att.GetId() ),(wx.ACCEL_CTRL,  ord('S'), save_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('O'), open_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('C'), close_opt.GetId() ),(wx.ACCEL_ALT,  ord('C'), cust_acc.GetId() ),(wx.ACCEL_ALT,  ord('R'), reset_all.GetId() ),(wx.ACCEL_CTRL,  ord('M'), my_acc.GetId() )])
+		accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL,  ord('A'), send_att.GetId() ),(wx.ACCEL_CTRL,  ord('F'), manage_files.GetId() ),(wx.ACCEL_CTRL,  ord('S'), save_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('O'), open_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('Q'), close_opt.GetId() ),(wx.ACCEL_ALT,  ord('C'), cust_acc.GetId() ),(wx.ACCEL_ALT,  ord('R'), reset_all.GetId() ),(wx.ACCEL_CTRL,  ord('M'), my_acc.GetId() )])
 		self.SetAcceleratorTable(accel_tbl)
 
 
@@ -230,6 +331,13 @@ class Fedora(wx.Frame):
 		wx.MessageBox('Success at sending!','Good!', wx.OK | wx.ICON_INFORMATION)
 	def handleDialog(self):
 		wx.MessageBox('Error at sending', 'OMAIGA!', wx.OK | wx.ICON_ERROR)
+	def clear_and_update(self):
+		self.fileTextCtrl.Clear()
+		for path in attos:
+			splitter = path.split('/')
+			splitter = splitter[-1]
+			splitter = splitter if len(path)<=35 else splitter[0:33]+'...'
+			self.fileTextCtrl.WriteText(splitter+"\n")
 	def attach_file(self,e):
 		dlg = wx.FileDialog(self, message="Open a File...",defaultDir=os.getcwd(), defaultFile="",  style=wx.OPEN)	
 		if dlg.ShowModal() == wx.ID_OK:
@@ -283,20 +391,25 @@ class Fedora(wx.Frame):
 		self.destiny_camp.SetValue('')
 		self.sub_camp.SetValue('')
 		self.body_camp.SetValue('')
-		attos = []
+		self.fileTextCtrl.Clear()
+		del attos[:]
 		self.statbar.SetStatusText('Clear!')
+		print attos
 	def change_account(self,e):
-		changer =RaiseAuth(True)
-		changer.ShowModal()
+		RaiseAuth(self,True)
 #		changer.Destroy()
 	def SetInsertionPointEnd(self):
 		self.fileTextCtrl.SetInsertionPointEnd()
-	def updateFiles(self,path):
+	def updateFiles(self,path):	
+		if path in attos:
+			pass
+		else:	
+			self.SetInsertionPointEnd()
 			attos.append(str(path))
 			splitter = path.split('/')
 			splitter = splitter[-1]
    			splitter = splitter if len(path)<=35 else splitter[0:33]+'...'
-   			print splitter
+   			self.fileTextCtrl.WriteText(splitter+"\n")
 	def account_data(self,e):
 		account_dat = shelve.open('account.dat')
 		account_info = wx.AboutDialogInfo()
@@ -316,12 +429,13 @@ class Fedora(wx.Frame):
 				fol = re.match(destiny_get,element)
 				if fol :
 					self.destiny_camp.Append(element)
-						
+	def manageFiles(self,e):
+
+		Man_at_files(self)
 	def send_mail_instant(self, e):
 		destiny_get = self.destiny_camp.GetValue()
 		subject_get = self.sub_camp.GetValue()
 		body_get = self.body_camp.GetValue()
-		if_anonymous = check_localhost.GetValue()
 		fol = re.match(regexion,destiny_get)
 		if fol is None :
 			wx.MessageBox('No Destiny?','Please insert a valid destiny', wx.OK | wx.ICON_INFORMATION)
@@ -333,12 +447,11 @@ class Fedora(wx.Frame):
 			wx.MessageBox('No body?','Please insert something?', wx.OK | wx.ICON_INFORMATION)
 		else:
 			if on_con() :
+	
 				s =shelve.open('account.dat')
-				a_mail = Mail(s['username'],destiny_get,subject_get,body_get,s['password'],*attos)
-				a_mail.send_it()
+				a_mail = Mail(s['username'],destiny_get,subject_get,body_get,s['password'],self,*attos)
 				s.close()
-				self.successDialog()
-				self.statbar.SetStatusText(str("Success at sending mail to " + destiny_get))
+				a_mail.send_it()
 				#Cache for name directory
 				c = shelve.open('d_cache.dat')
 				
@@ -354,7 +467,7 @@ class Fedora(wx.Frame):
 			password_key = account_dat['password']
 			account_dat.close()	
 		except KeyError:
-			understand =RaiseAuth()
+			understand =RaiseAuth(self)
 			understand.ShowModal()
 			understand.Destroy()
 		else:
@@ -364,21 +477,25 @@ class Fedora(wx.Frame):
 		self.Close()			
 class Mail(object):
 
-	def __init__(self, account, reciever,subject, text,password, *attachments ):
+	def __init__(self, account, reciever,subject, text,password,parent, *attachments ):
 		self.account = account
 		self.reciever=reciever
 		self.body = text
 		self.subject = subject
 		self.__password = password
 		self.file_attachments = attachments
+		self.parent = parent
 	def send_it(self):	
-		#From Stack Exchange
+		length = len(self.file_attachments)
+		progress_frame = Gauger(self,length+3)
+
 		msg = MIMEMultipart('alternative')
 		msg['To'] = self.reciever
 		msg['From'] = self.account
 		msg['Date'] = formatdate(localtime=True)
 		msg['Subject'] = self.subject
 		msg.attach(MIMEText(self.body))
+		progress_frame.add_to_gauge()
 		if self.file_attachments:
 			for file_att in self.file_attachments:
 				try:
@@ -387,7 +504,8 @@ class Mail(object):
 					Encoders.encode_base64(file_parser)
 					file_parser.add_header('Content-Disposition', 'attachment; filename="%s"' % os.path.basename(file_att))
 					msg.attach(file_parser)
-				except IOError :
+					progress_frame.add_to_gauge()
+				except IOError:
 					wx.MessageBox('file attachment deleted or removed','Oops!', wx.OK | wx.ICON_INFORMATION)
 		gmail_serv =re.match(gmail_regex,self.account)
 		yahoo_serv =re.match(yahoo_regex, self.account)
@@ -399,28 +517,38 @@ class Mail(object):
 		elif hotmail_serv:
 			smtpserver = smtplib.SMTP("smtp.live.com",587)
 		else:
-			smtpserver = smtplib.SMTP("smtp.gmail.com",587)
+			smtpserver = smtplib.SMTP("smtp.gmail.com",587)	
 		smtpserver.ehlo()
 		smtpserver.starttls()
-		smtpserver.ehlo
+		smtpserver.ehlo()
 		smtpserver.login(self.account, self.getpwd())
-		smtpserver.sendmail(self.account,self.reciever, msg.as_string())
-		print "Yeah!"
+		progress_frame.add_to_gauge()
+		try:
+			
+			smtpserver.sendmail(self.account,self.reciever, msg.as_string())
+		except smtplib.SMTPSenderRefused :	
+			progress_frame.Explode()
+			wx.MessageBox('Please Use Google Drive or MEGA links','The File Load is Too Big', wx.OK | wx.ICON_INFORMATION)
+			self.parent.statbar.SetStatusText("Mail Error :(" )
+		else:
+			progress_frame.add_to_gauge()
+			self.parent.successDialog()
+			self.parent.statbar.SetStatusText(str("Success at sending mail to " + self.reciever))
 		smtpserver.close()
 	def	getpwd(self):
 		return self.__password
+
 def on_con():
 	try:
-		response=urllib2.urlopen('http://example.com',timeout=4)
+		response=urllib2.urlopen('http://example.com',timeout=5)
 		return True
 	except urllib2.URLError as err: pass
 	return False						
 #superabstraction        
 if __name__ == '__main__':
 	app = wx.App()
-	Fedora('Fedora test')
+	Fedora()
 	app.MainLoop()
-
 
 
 
