@@ -29,12 +29,13 @@ regexion = "^.+\\@(\\[?)[a-zA-Z0-9\\-\\.]+\\.([a-zA-Z]{2,3}|[0-9]{1,3})(\\]?)$"
 attos = []
 wildcard = "xml file (*.xml; *.xml)|*.xml;*.xml|" \
          "All files (*.*)|*.*"
-SEND_ATT,OPEN_PROMPT,SAVE_PROMT, CLOSE,DEF_ACC,CUST_ACC,RESET_ALL,MY_ACC,MAN_F = 1,2,3,4,5,6,7,8,9
+wildcard1 = "xml file (*.xml; *.xml)|*.xml;*.xml|"        
+SEND_ATT,OPEN_PROMPT,SAVE_PROMT, CLOSE,DEF_ACC,CUST_ACC,RESET_ALL,MY_ACC,MAN_F,MAN_F_X,OPEN_ALL,ACC_X,CUST_X = 1,2,3,4,5,6,7,8,9,10,11,12,13
 		
 class Gauger(wx.Frame):
-	def __init__(self,parent,task_range):
-		super(Gauger, self).__init__(None)
-		self.parent = parent
+	def __init__(self,grandfather,task_range):
+		super(Gauger, self).__init__(None,style=wx.CAPTION)
+		self.grandfather = grandfather
 		self.task_range = task_range
 		self.GaugeBox()
 		self.Centre()
@@ -46,10 +47,9 @@ class Gauger(wx.Frame):
 		vbox = wx.BoxSizer(wx.VERTICAL)
 		hbox1 = wx.BoxSizer(wx.HORIZONTAL)
 		hbox2 = wx.BoxSizer(wx.HORIZONTAL)
-		vbox.Add(-1,20)
 		self.gauge = wx.Gauge(panel, range=self.task_range, size=(250, 50))
 		self.text = wx.StaticText(panel, label='Sending...')
-		self.text.SetFont(self.parent.font)
+		self.text.SetFont(self.grandfather.font)
 		hbox1.Add(self.gauge, proportion=1, flag=wx.ALIGN_CENTRE)
 		vbox.Add(hbox1,flag=wx.ALIGN_CENTRE|wx.TOP, border =5)
 		hbox2.Add(self.text)
@@ -148,9 +148,13 @@ class RaiseAuth(wx.Frame):
 				connection.close()
 				self.Destroy()
 		else:
-			wx.MessageBox('Only gmail, hotmail, and yahoo! are used','Introduce a valid mail', wx.OK | wx.ICON_INFORMATION)	
+			wx.MessageBox('Only gmail, hotmail, and yahoo! are available','Introduce a valid mail', wx.OK | wx.ICON_INFORMATION)	
+	def call(self):
+			return 	
 	def close(self,e):
-		self.Close()	
+		self.Close()
+	def Explode(self):
+		self.Close()		
 class DropTarget(wx.FileDropTarget):
 	def __init__(self,parent):
 		wx.FileDropTarget.__init__(self)
@@ -209,9 +213,54 @@ class Man_at_files(wx.Frame):
 
 
 			self.parent.clear_and_update()
+	def call(self):
+		return 		
 	def Explode(self):
-		self.Destroy()		
-		
+		self.Close()	
+class Info(wx.Frame):
+		def __init__(self, parent,user):
+			super(Info, self).__init__(None,title='About',pos =(950,400), style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION|wx.CLOSE_BOX,size = (300,250))
+			self.parent = parent
+			self.user = user
+			self.InfoUI()
+			self.Show()
+		def InfoUI(self):
+			panel  = wx.Panel(self)
+			bmp5 = wx.Image('img/info.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+			panel.bitmap2 = wx.StaticBitmap(panel, -1, bmp5, (0, 0))
+			vbox = wx.BoxSizer(wx.VERTICAL)	
+			vbox.Add((-1,110))
+			box = wx.BoxSizer(wx.HORIZONTAL)	
+			logged = wx.StaticText(panel,label = "Logged As")
+			logged.SetFont(self.parent.font1)
+			box.Add(logged)
+			vbox.Add(box,flag = wx.ALIGN_CENTRE,border = 5)
+			box1 = wx.BoxSizer(wx.HORIZONTAL)
+			vbox.Add((-1,10))
+
+			user_text = wx.StaticText(panel,label = self.user)
+			user_text.SetFont(self.parent.font)
+			box1.Add(user_text)
+			vbox.Add(box1,flag = wx.ALIGN_CENTRE,border = 5)
+			vbox.Add((-1,15))
+
+			box3 = wx.BoxSizer(wx.HORIZONTAL)
+			developer = wx.StaticText(panel, label = "Developed by Demarox")
+			developer.SetFont(self.parent.font1)
+
+			box3.Add(developer)
+			vbox.Add(box3,flag = wx.ALIGN_CENTRE,border = 5)
+			vbox.Add((-1,10))
+
+			box2 = wx.BoxSizer(wx.HORIZONTAL)
+			self.link = wx.HyperlinkCtrl(panel,wx.ID_ANY, label = "Fork the Project!",url='https://github.com/demarox/Fedora-The-Mailer')
+			box2.Add(self.link)
+			vbox.Add(box2,flag = wx.ALIGN_CENTRE,border = 5)
+			panel.SetSizer(vbox)
+		def call(self):
+			return 	
+		def Explode(self):
+			self.Close()	
 class Fedora(wx.Frame):
 	def __init__(self, title= 'Fedora'):
 		super(Fedora, self).__init__(None,id= -1, title = title, style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION |wx.CLOSE_BOX, size= (500,570))
@@ -223,28 +272,39 @@ class Fedora(wx.Frame):
 		#background
 		#menu
 		self.font = wx.Font(15, wx.MODERN, wx.NORMAL, wx.BOLD)
+		self.font1 = wx.Font(15, wx.MODERN, wx.NORMAL, wx.NORMAL)
 		menubar = wx.MenuBar()
 		filemenu = wx.Menu()
-		send_att = wx.MenuItem(filemenu,SEND_ATT, '&Send Attachment \tCtrl+A')
+		send_att = wx.MenuItem(filemenu,SEND_ATT, '&Send Attachment \tCtrl+T')
 		open_prompt = wx.MenuItem(filemenu,OPEN_PROMPT, '&Open Draft \tCtrl+O')
 		save_prompt = wx.MenuItem(filemenu, SAVE_PROMT, '&Save Draft\tCtrl+S')
+		open_all_opt = wx.MenuItem(filemenu,OPEN_ALL,'&Open All\tCtrl+E')
 		close_opt = wx.MenuItem(filemenu, CLOSE, '&Close\tCtrl+Q')
 		filemenu.AppendItem(send_att)
 		filemenu.AppendItem(save_prompt)
 		filemenu.AppendItem(open_prompt)
+		filemenu.AppendSeparator()
+		filemenu.AppendItem(open_all_opt)
 		filemenu.AppendItem(close_opt)
 
 		editmenu = wx.Menu()
-		cust_acc = wx.MenuItem(editmenu, CUST_ACC, '&Change Account\tAlt+C')
+		cust_acc = wx.MenuItem(editmenu, CUST_ACC, '&Change Account\tCtrl+A')
 		reset_all = wx.MenuItem(editmenu, RESET_ALL, '&Reset \tAlt+R')
+		change_account_x = wx.MenuItem(editmenu,CUST_X,'&Close Account Change Box\tAlt+A')
 		editmenu.AppendItem(cust_acc)
 		editmenu.AppendItem(reset_all)
+		editmenu.AppendItem(change_account_x)
 
 		viewmenu = wx.Menu()
-		my_acc = wx.MenuItem(viewmenu,MY_ACC,'&My Account\tCtrl+M')
+		my_acc = wx.MenuItem(viewmenu,MY_ACC,'&My Account\tCtrl+I')
 		manage_files = wx.MenuItem(viewmenu,MAN_F,'&Manage Files\tCtrl+F')
+		manage_files_x = wx.MenuItem(viewmenu,MAN_F_X, '&Close the Manager\tAlt+I')
+		account_data_x = wx.MenuItem(viewmenu,ACC_X,'&Close The Info Box\tAlt+F')
 		viewmenu.AppendItem(my_acc)
 		viewmenu.AppendItem(manage_files)
+		viewmenu.AppendSeparator()
+		viewmenu.AppendItem(manage_files_x)
+		viewmenu.AppendItem(account_data_x)
 
 		menubar.Append(filemenu, '&File')
 		menubar.Append(editmenu, '&Edit')
@@ -264,8 +324,7 @@ class Fedora(wx.Frame):
 		destiny_text.SetFont(self.font)
 		destiny_box.Add(destiny_text, flag = wx.RIGHT, border = 5)
 		self.destiny_camp =  wx.ComboBox(panel, -1, choices = directory_cache_list)
-#		cp = ComboPopup()
-#		self.destiny_camp.SetPopupControl(cp)
+#
 		destiny_box.Add(self.destiny_camp, proportion = 1)
 		box.Add(destiny_box, flag = wx.EXPAND | wx.RIGHT | wx.LEFT| wx.TOP ,border = 23)
 		box.Add((-1,10))
@@ -314,15 +373,21 @@ class Fedora(wx.Frame):
 		self.Bind(wx.EVT_MENU, self.attach_file, send_att)
 		self.Bind(wx.EVT_MENU, self.on_open, open_prompt)
 		self.Bind(wx.EVT_MENU, self.on_save, save_prompt)
-		self.Bind(wx.EVT_MENU, self.on_quit , close_opt)
+		self.Bind(wx.EVT_MENU, self.kill_all , close_opt)
 		self.Bind(wx.EVT_MENU, self.change_account, cust_acc)
 		self.Bind(wx.EVT_MENU, self.reseter, reset_all)
 		self.Bind(wx.EVT_MENU, self.account_data, my_acc)
 		self.Bind(wx.EVT_MENU, self.manageFiles, manage_files)
+		self.Bind(wx.EVT_MENU, self.change_account_close , change_account_x)
+		self.Bind(wx.EVT_MENU, self.account_data_close, account_data_x)
+		self.Bind(wx.EVT_MENU, self.manageFiles_close, manage_files_x)
+		self.Bind(wx.EVT_MENU, self.open_all , open_all_opt)
+#		self.Bind(wx.EVT_MENU, self.kill_all, kill_opt)
+#		self.Bind(wx.EVT_CLOSE,self.kill_all)
 		self.Bind(wx.EVT_BUTTON, self.send_mail_instant , send_button)
 		self.Bind(wx.EVT_TEXT,self.select_mails ,self.destiny_camp)
 		#Accelerators
-		accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL,  ord('A'), send_att.GetId() ),(wx.ACCEL_CTRL,  ord('F'), manage_files.GetId() ),(wx.ACCEL_CTRL,  ord('S'), save_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('O'), open_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('Q'), close_opt.GetId() ),(wx.ACCEL_ALT,  ord('C'), cust_acc.GetId() ),(wx.ACCEL_ALT,  ord('R'), reset_all.GetId() ),(wx.ACCEL_CTRL,  ord('M'), my_acc.GetId() )])
+		accel_tbl = wx.AcceleratorTable([(wx.ACCEL_ALT,  ord('A'), change_account_x.GetId() ),(wx.ACCEL_ALT,  ord('I'), account_data_x.GetId() ),(wx.ACCEL_CTRL,  ord('T'), send_att.GetId() ),(wx.ACCEL_CTRL,  ord('E'), open_all_opt.GetId() ),(wx.ACCEL_ALT,  ord('F'), manage_files_x.GetId() ),(wx.ACCEL_CTRL,  ord('F'), manage_files.GetId() ),(wx.ACCEL_CTRL,  ord('S'), save_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('O'), open_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('Q'), close_opt.GetId() ),(wx.ACCEL_CTRL,  ord('A'), cust_acc.GetId() ),(wx.ACCEL_CTRL,  ord('R'), reset_all.GetId() ),(wx.ACCEL_CTRL,  ord('I'), my_acc.GetId() )])
 		self.SetAcceleratorTable(accel_tbl)
 
 
@@ -349,7 +414,7 @@ class Fedora(wx.Frame):
 		dlg.Destroy	
 		
 	def on_open(self,e):
-		dlg = wx.FileDialog(self, message="Open a draft...",defaultDir=os.getcwd(), defaultFile="",  style=wx.OPEN)	
+		dlg = wx.FileDialog(self, message="Open a draft...",defaultDir=os.getcwd(), defaultFile="",wildcard= "XML files (*.xml)|*.xml" , style=wx.OPEN | wx.FD_FILE_MUST_EXIST)	
 		if dlg.ShowModal() == wx.ID_OK:
 			path = dlg.GetPaths()
 			path = "".join(c for c in path if c not in trimmer)
@@ -370,10 +435,11 @@ class Fedora(wx.Frame):
 		dlg.Destroy	
 
 	def on_save(self,e):
-		dlg = wx.FileDialog(self, message="Save Draft as...",defaultDir=os.getcwd(), defaultFile="", wildcard=wildcard, style=wx.SAVE)	
+		dlg = wx.FileDialog(self, message="Save Draft as...",defaultDir=os.getcwd(), defaultFile="", wildcard="XML files (*.xml)|*.xml", style=wx.SAVE)	
 		if dlg.ShowModal() == wx.ID_OK:
 			path = dlg.GetPaths()
 			path = "".join(c for c in path if c not in trimmer)
+			path = path+'.xml'
 			destiny_get = self.destiny_camp.GetValue()
 			subject_get = self.sub_camp.GetValue()
 			body_getter = self.body_camp.GetValue()
@@ -394,12 +460,22 @@ class Fedora(wx.Frame):
 		self.fileTextCtrl.Clear()
 		del attos[:]
 		self.statbar.SetStatusText('Clear!')
-		print attos
-	def change_account(self,e):
-		RaiseAuth(self,True)
-#		changer.Destroy()
+	def change_account(self,e):		
+		try:
+			self.raiseauth_window.call()
+		except AttributeError,e :
+			self.raiseauth_window =RaiseAuth(self,True)
+
+	def change_account_close(self,e):
+		try:
+			self.raiseauth_window.call()
+		except AttributeError,e :
+			pass
+		else:
+			self.raiseauth_window.Explode()
+			del self.raiseauth_window
 	def SetInsertionPointEnd(self):
-		self.fileTextCtrl.SetInsertionPointEnd()
+		self.fileTextCtrl.SetInsertionPointEnd()	
 	def updateFiles(self,path):	
 		if path in attos:
 			pass
@@ -408,19 +484,32 @@ class Fedora(wx.Frame):
 			attos.append(str(path))
 			splitter = path.split('/')
 			splitter = splitter[-1]
-   			splitter = splitter if len(path)<=35 else splitter[0:33]+'...'
-   			self.fileTextCtrl.WriteText(splitter+"\n")
+			splitter = splitter if len(path)<=35 else splitter[0:33]+'...'
+			self.fileTextCtrl.WriteText(splitter+"\n")
+			try:
+				self.man_f_window.call()
+			except AttributeError,e:	
+				pass
+			else:	
+				self.man_f_window.Explode()
+				del self.man_f_window
+				self.manageFiles(True)
 	def account_data(self,e):
-		account_dat = shelve.open('account.dat')
-		account_info = wx.AboutDialogInfo()
-		person_ico = wx.Icon('img/person_icon.png', wx.BITMAP_TYPE_PNG)
-		account_info.SetIcon(person_ico)
-		account_info.SetName(account_dat['username'])
-		account_info.SetDescription('                                                         ')
-		account_info.SetWebSite('https://github.com/demarox')
-		account_info.AddDeveloper('Demarox')
-		wx.AboutBox(account_info)
-		account_dat.close()
+		
+		try:
+			self.info_window.call()
+		except AttributeError,e :
+			account_dat = shelve.open('account.dat')
+			self.info_window= Info(self,account_dat['username'])
+			account_dat.close()
+	def account_data_close(self,e):
+		try:
+			self.info_window.call()
+		except AttributeError,e :
+			pass
+		else:
+			self.info_window.Explode()
+			del self.info_window
 	def select_mails(self,e):
 			self.destiny_camp.Clear()
 			self.destiny_camp.SetInsertionPointEnd()
@@ -430,8 +519,21 @@ class Fedora(wx.Frame):
 				if fol :
 					self.destiny_camp.Append(element)
 	def manageFiles(self,e):
+		try:
+			self.man_f_window.call()
+		except AttributeError, e:
+			self.man_f_window = Man_at_files(self)
+		else:
+			pass
 
-		Man_at_files(self)
+	def manageFiles_close(self,e):
+		try:
+			self.man_f_window.call()
+		except AttributeError,e :
+			pass
+		else:
+			self.man_f_window.Explode()
+			del self.man_f_window			
 	def send_mail_instant(self, e):
 		destiny_get = self.destiny_camp.GetValue()
 		subject_get = self.sub_camp.GetValue()
@@ -472,9 +574,40 @@ class Fedora(wx.Frame):
 			understand.Destroy()
 		else:
 			pass
+	def open_all(self,e):
+		try:
+			self.info_window.call()
+		except AttributeError, e:
+			self.account_data(True)
+		try:
+			self.raiseauth_window.call()
+		except AttributeError, e:
+			self.change_account(True)	
+		try:
+			self.man_f_window.call()
+		except AttributeError, e:
+			self.manageFiles(True)	
+	def kill_all(self,e):
+		try:
+			self.info_window.call()
+		except AttributeError, e:
+			pass
+		else:
+			self.info_window.Explode()
+		try:
+			self.raiseauth_window.call()
+		except AttributeError, e:
+			pass
+		else:
+			self.raiseauth_window.Explode()	
+		try:
+			self.man_f_window.call()
+		except AttributeError, e:
+			pass	
+		else:
+			self.man_f_window.Explode()					
+		self.Close()
 
-	def on_quit(self,e):
-		self.Close()			
 class Mail(object):
 
 	def __init__(self, account, reciever,subject, text,password,parent, *attachments ):
@@ -487,7 +620,7 @@ class Mail(object):
 		self.parent = parent
 	def send_it(self):	
 		length = len(self.file_attachments)
-		progress_frame = Gauger(self,length+3)
+		progress_frame = Gauger(self.parent,length+3)
 
 		msg = MIMEMultipart('alternative')
 		msg['To'] = self.reciever
