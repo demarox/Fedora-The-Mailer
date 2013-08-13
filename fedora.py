@@ -1,4 +1,5 @@
-#Fedora
+#Yubin
+
 import shelve
 import wx
 import wx.combo
@@ -6,6 +7,7 @@ import pdb
 import os
 import smtplib
 import re
+import webbrowser
 import string
 import random
 import urllib2
@@ -26,11 +28,8 @@ hotmail_regex = "\w+([-+.]\w+)*@hotmail.com"
 yahoo_regex ="\w+([-+.]\w+)*@yahoo.com"
 gmail_regex = "^[a-z0-9](\.?[a-z0-9]){5,}@g(oogle)?mail\.com$"
 regexion = "^.+\\@(\\[?)[a-zA-Z0-9\\-\\.]+\\.([a-zA-Z]{2,3}|[0-9]{1,3})(\\]?)$"
-attos = []
-wildcard = "xml file (*.xml; *.xml)|*.xml;*.xml|" \
-         "All files (*.*)|*.*"
-wildcard1 = "xml file (*.xml; *.xml)|*.xml;*.xml|"        
-SEND_ATT,OPEN_PROMPT,SAVE_PROMT, CLOSE,DEF_ACC,CUST_ACC,RESET_ALL,MY_ACC,MAN_F,MAN_F_X,OPEN_ALL,ACC_X,CUST_X = 1,2,3,4,5,6,7,8,9,10,11,12,13
+attos = []        
+SEND_ATT,OPEN_PROMPT,SAVE_PROMT, CLOSE,DEF_ACC,CUST_ACC,RESET_ALL,MY_ACC,MAN_F,MAN_F_X,OPEN_ALL,ACC_X,CUST_X,HELP = 1,2,3,4,5,6,7,8,9,10,11,12,13,14
 		
 class Gauger(wx.Frame):
 	def __init__(self,grandfather,task_range):
@@ -74,7 +73,7 @@ class RaiseAuth(wx.Frame):
 		self.parent = parent
 		self.cancel_view = cancel_view
 		self.DialogUI()
-		self.SetTitle("Authenticate please...")
+		self.SetTitle("Authentication")
 		if cancel_view== False:
 			self.Centre()
 		self.Show()
@@ -112,43 +111,50 @@ class RaiseAuth(wx.Frame):
 
 		#Binder
 		self.Bind(wx.EVT_BUTTON, self.it_works, opt_ok)
-		self.Bind(wx.EVT_BUTTON, self.close, opt_cancel)
-	def it_works(self,e):
-#Authentication		
-		self.get_user = self.user_camp.GetValue()
-		self.get_pass = self.password_camp.GetValue()
-		match_mail = re.match(supported_regex,self.get_user)
-		if match_mail:
+		if self.cancel_view:
 
-			try:
-				gmail_serv =re.match(gmail_regex,self.get_user)
-				yahoo_serv =re.match(yahoo_regex, self.get_user)
-				hotmail_serv =  re.match(hotmail_regex,self.get_user)
-				if gmail_serv:
-					smtpserver = smtplib.SMTP("smtp.gmail.com",587)			
-				elif yahoo_serv:
-					smtpserver = smtplib.SMTP("smtp.mail.yahoo.com",587)
-				elif hotmail_serv:
-					smtpserver = smtplib.SMTP("smtp.live.com",587)
+			self.Bind(wx.EVT_BUTTON, self.close, opt_cancel)
+	def it_works(self,e):
+#Authentication	
+		if on_con():	
+			self.get_user = self.user_camp.GetValue()
+			self.get_pass = self.password_camp.GetValue()
+			match_mail = re.match(supported_regex,self.get_user)
+
+			if match_mail:
+
+				try:
+					gmail_serv =re.match(gmail_regex,self.get_user)
+					yahoo_serv =re.match(yahoo_regex, self.get_user)
+					hotmail_serv =  re.match(hotmail_regex,self.get_user)
+					if gmail_serv:
+						smtpserver = smtplib.SMTP("smtp.gmail.com",587)			
+					elif yahoo_serv:
+						smtpserver = smtplib.SMTP("smtp.mail.yahoo.com",587)
+					elif hotmail_serv:
+						smtpserver = smtplib.SMTP("smtp.live.com",587)
+					else:
+						smtpserver = smtplib.SMTP("smtp.gmail.com",587)		
+					smtpserver.ehlo()
+					smtpserver.starttls()
+					smtpserver.ehlo
+					smtpserver.login(self.get_user, self.get_pass)
+					smtpserver.close()
+				except smtplib.SMTPAuthenticationError:
+					RaisePopup('Authentication Error','Introduce your keys again')
+					self.user_camp.SetValue('')
+					self.password_camp.SetValue('')
 				else:
-					smtpserver = smtplib.SMTP("smtp.gmail.com",587)		
-				smtpserver.ehlo()
-				smtpserver.starttls()
-				smtpserver.ehlo
-				smtpserver.login(self.get_user, self.get_pass)
-				smtpserver.close()
-			except smtplib.SMTPAuthenticationError:
-				wx.MessageBox('something went wrong','Introduce your keys again', wx.OK | wx.ICON_INFORMATION)
-				self.user_camp.SetValue('')
-				self.password_camp.SetValue('')
-			else:
-				connection = shelve.open('account.dat')
-				connection['username'] = self.get_user
-				connection['password'] = self.get_pass
-				connection.close()
-				self.Destroy()
+					connection = shelve.open('account.dat')
+					connection['username'] = self.get_user
+					connection['password'] = self.get_pass
+					connection.close()
+					self.parent.Show()
+					self.Destroy()
+			else:	
+				RaisePopup('No @ Support Error','Only gmail,yahoo! and hotmail')
 		else:
-			wx.MessageBox('Only gmail, hotmail, and yahoo! are available','Introduce a valid mail', wx.OK | wx.ICON_INFORMATION)	
+			self.parent.handleDialog()		
 	def call(self):
 			return 	
 	def close(self,e):
@@ -163,7 +169,63 @@ class DropTarget(wx.FileDropTarget):
 		self.parent.SetInsertionPointEnd()
 		for filepath in filenames:
 			self.parent.updateFiles(filepath)
-
+class RaisePopup(wx.Frame):
+	def __init__(self,title,text):
+		super(RaisePopup, self).__init__(None,style=wx.CAPTION,size=(300,200))
+		self.title = title
+		self.text = text
+		self.LittleUI()
+		self.Centre()
+		self.SetTitle(self.title)
+		self.Show()
+	def LittleUI(self):
+		panel = wx.Panel(self)
+		bmp6 = wx.Image('img/raise.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		panel.bitmap2 = wx.StaticBitmap(panel, -1, bmp6, (0, 0))
+		vbox = wx.BoxSizer(wx.VERTICAL)
+		hbox1 = wx.BoxSizer(wx.HORIZONTAL)
+		self.text = wx.StaticText(panel, label=self.text)
+		self.font = wx.Font(15, wx.MODERN, wx.NORMAL, wx.NORMAL)
+		self.text.SetFont(self.font)
+		hbox1.Add(self.text)
+		vbox.Add((-1,100))
+		vbox.Add(hbox1,flag=wx.ALIGN_CENTRE)
+		vbox.Add((-1,10))
+		box = wx.BoxSizer(wx.HORIZONTAL)
+		button = wx.Button(panel,label= "Ok", size = (100,40))
+		box.Add(button, flag  = wx.RIGHT | wx.BOTTOM)
+		vbox.Add(box, flag = wx.ALIGN_CENTRE |wx.LEFT|wx.RIGHT, border = 23)
+		self.Bind(wx.EVT_BUTTON,self.quit, button)
+		panel.SetSizer(vbox)
+	def quit(self,e):
+		self.Close()			
+class SuccessPopup(wx.Frame):
+	def __init__(self):
+		super(SuccessPopup, self).__init__(None,style=wx.CAPTION,size=(300,130))
+		self.LittleUI()
+		self.Centre()
+		self.Show()
+	def LittleUI(self):
+		panel = wx.Panel(self)
+		bmp6 = wx.Image('img/success.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		panel.bitmap2 = wx.StaticBitmap(panel, -1, bmp6, (0, 0))
+		vbox = wx.BoxSizer(wx.VERTICAL)
+		hbox1 = wx.BoxSizer(wx.HORIZONTAL)
+		self.text = wx.StaticText(panel, label='Success At Sending!')
+		self.font = wx.Font(18, wx.MODERN, wx.NORMAL, wx.BOLD)
+		self.text.SetFont(self.font)
+		hbox1.Add(self.text)
+		vbox.Add((-1,55))
+		vbox.Add(hbox1,flag=wx.ALIGN_CENTRE)
+		vbox.Add((-1,5))
+		box = wx.BoxSizer(wx.HORIZONTAL)
+		button = wx.Button(panel,label= "Ok!", size = (80,35))
+		box.Add(button, flag  = wx.RIGHT | wx.BOTTOM)
+		vbox.Add(box, flag = wx.ALIGN_CENTRE |wx.LEFT|wx.RIGHT, border = 23)
+		self.Bind(wx.EVT_BUTTON,self.quit, button)
+		panel.SetSizer(vbox)
+	def quit(self,e):
+		self.Close()			
 class Man_at_files(wx.Frame):
 	def __init__(self,parent):
 		super(Man_at_files, self).__init__(None,pos =(10,50), style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION|wx.CLOSE_BOX)
@@ -172,7 +234,7 @@ class Man_at_files(wx.Frame):
 		self.in_box = {}
 		self.dest_text = {}
 		self.FrameUI()
-		self.SetTitle('Files added')
+		self.SetTitle('File Manager')
 		self.SetSize((350,600))
 		self.Show()
 		
@@ -188,7 +250,7 @@ class Man_at_files(wx.Frame):
 		for path in attos:
 			asc_id =self.id_generator()
 			self.in_box[path] = wx.BoxSizer(wx.HORIZONTAL)
-			label = '...'+path[-25:]
+			label = '...'+path[-28:]
 			self.dest_text[path] = wx.StaticText(panel,label =label)
 			self.dest_text[path].SetFont(self.parent.font)
 			self.in_box[path].Add(self.dest_text[path])	
@@ -261,13 +323,14 @@ class Info(wx.Frame):
 			return 	
 		def Explode(self):
 			self.Close()	
-class Fedora(wx.Frame):
-	def __init__(self, title= 'Fedora'):
-		super(Fedora, self).__init__(None,id= -1, title = title, style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION |wx.CLOSE_BOX, size= (500,570))
+class Yubin(wx.Frame):
+	def __init__(self, title= 'Yubin'):
+		super(Yubin, self).__init__(None,id= -1, title = title, style  = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION|wx.CLOSE_BOX, size= (500,570))
 		self.GeneralUI()
-		self.Aproveaccount()
+#		self.Aproveaccount()
 		self.Centre()
-		self.Show()
+
+		self.Aproveaccount()
 	def GeneralUI(self):
 		#background
 		#menu
@@ -289,26 +352,31 @@ class Fedora(wx.Frame):
 
 		editmenu = wx.Menu()
 		cust_acc = wx.MenuItem(editmenu, CUST_ACC, '&Change Account\tCtrl+A')
-		reset_all = wx.MenuItem(editmenu, RESET_ALL, '&Reset \tAlt+R')
+		reset_all = wx.MenuItem(editmenu, RESET_ALL, '&Reset \tCtrl+R')
 		change_account_x = wx.MenuItem(editmenu,CUST_X,'&Close Account Change Box\tAlt+A')
 		editmenu.AppendItem(cust_acc)
 		editmenu.AppendItem(reset_all)
 		editmenu.AppendItem(change_account_x)
 
 		viewmenu = wx.Menu()
-		my_acc = wx.MenuItem(viewmenu,MY_ACC,'&My Account\tCtrl+I')
 		manage_files = wx.MenuItem(viewmenu,MAN_F,'&Manage Files\tCtrl+F')
-		manage_files_x = wx.MenuItem(viewmenu,MAN_F_X, '&Close the Manager\tAlt+I')
-		account_data_x = wx.MenuItem(viewmenu,ACC_X,'&Close The Info Box\tAlt+F')
-		viewmenu.AppendItem(my_acc)
+		my_acc = wx.MenuItem(viewmenu,MY_ACC,'&My Account\tCtrl+I')
+		manage_files_x = wx.MenuItem(viewmenu,MAN_F_X, '&Close the Manager\tAlt+F')
+		account_data_x = wx.MenuItem(viewmenu,ACC_X,'&Close The Info Box\tAlt+I')
 		viewmenu.AppendItem(manage_files)
+		viewmenu.AppendItem(my_acc)
 		viewmenu.AppendSeparator()
 		viewmenu.AppendItem(manage_files_x)
 		viewmenu.AppendItem(account_data_x)
 
+		helpmenu = wx.Menu()
+		help_opt = wx.MenuItem(helpmenu,HELP,'&Help and Documentation\tCtrl+H')
+		helpmenu.AppendItem(help_opt)
+
 		menubar.Append(filemenu, '&File')
 		menubar.Append(editmenu, '&Edit')
 		menubar.Append(viewmenu, '&View')
+		menubar.Append(helpmenu, '&Help')
 		self.SetMenuBar(menubar)
 		
 		#layout
@@ -382,20 +450,18 @@ class Fedora(wx.Frame):
 		self.Bind(wx.EVT_MENU, self.account_data_close, account_data_x)
 		self.Bind(wx.EVT_MENU, self.manageFiles_close, manage_files_x)
 		self.Bind(wx.EVT_MENU, self.open_all , open_all_opt)
-#		self.Bind(wx.EVT_MENU, self.kill_all, kill_opt)
-#		self.Bind(wx.EVT_CLOSE,self.kill_all)
+		self.Bind(wx.EVT_CLOSE,self.kill_all)
 		self.Bind(wx.EVT_BUTTON, self.send_mail_instant , send_button)
 		self.Bind(wx.EVT_TEXT,self.select_mails ,self.destiny_camp)
+		self.Bind(wx.EVT_MENU,self.popHelp, help_opt)
 		#Accelerators
 		accel_tbl = wx.AcceleratorTable([(wx.ACCEL_ALT,  ord('A'), change_account_x.GetId() ),(wx.ACCEL_ALT,  ord('I'), account_data_x.GetId() ),(wx.ACCEL_CTRL,  ord('T'), send_att.GetId() ),(wx.ACCEL_CTRL,  ord('E'), open_all_opt.GetId() ),(wx.ACCEL_ALT,  ord('F'), manage_files_x.GetId() ),(wx.ACCEL_CTRL,  ord('F'), manage_files.GetId() ),(wx.ACCEL_CTRL,  ord('S'), save_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('O'), open_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('Q'), close_opt.GetId() ),(wx.ACCEL_CTRL,  ord('A'), cust_acc.GetId() ),(wx.ACCEL_CTRL,  ord('R'), reset_all.GetId() ),(wx.ACCEL_CTRL,  ord('I'), my_acc.GetId() )])
 		self.SetAcceleratorTable(accel_tbl)
 
 
-	#Fedora popups
-	def successDialog(self):
-		wx.MessageBox('Success at sending!','Good!', wx.OK | wx.ICON_INFORMATION)
+######Yubin Core######
 	def handleDialog(self):
-		wx.MessageBox('Error at sending', 'OMAIGA!', wx.OK | wx.ICON_ERROR)
+		RaisePopup('No connection','The connection is unnavailable')
 	def clear_and_update(self):
 		self.fileTextCtrl.Clear()
 		for path in attos:
@@ -404,17 +470,16 @@ class Fedora(wx.Frame):
 			splitter = splitter if len(path)<=35 else splitter[0:33]+'...'
 			self.fileTextCtrl.WriteText(splitter+"\n")
 	def attach_file(self,e):
-		dlg = wx.FileDialog(self, message="Open a File...",defaultDir=os.getcwd(), defaultFile="",  style=wx.OPEN)	
+		dlg = wx.FileDialog(self, message="Open a File...",defaultDir="", defaultFile="",  style=wx.OPEN)	
 		if dlg.ShowModal() == wx.ID_OK:
 			path = dlg.GetPaths()
 			path = "".join(c for c in path if c not in trimmer)
-#			print path
 			self.updateFiles(path)
 			self.statbar.SetStatusText("File Correctly Added!")
 		dlg.Destroy	
 		
 	def on_open(self,e):
-		dlg = wx.FileDialog(self, message="Open a draft...",defaultDir=os.getcwd(), defaultFile="",wildcard= "XML files (*.xml)|*.xml" , style=wx.OPEN | wx.FD_FILE_MUST_EXIST)	
+		dlg = wx.FileDialog(self, message="Open a draft...",defaultDir="", defaultFile="",wildcard= "XML files (*.xml)|*.xml" , style=wx.OPEN | wx.FD_FILE_MUST_EXIST)	
 		if dlg.ShowModal() == wx.ID_OK:
 			path = dlg.GetPaths()
 			path = "".join(c for c in path if c not in trimmer)
@@ -422,20 +487,23 @@ class Fedora(wx.Frame):
 			d = file_read.read()
 			file_read.close()
 			parse_d = parseString(d)
-			to_tag = parse_d.getElementsByTagName('to')[0].toxml()
-			to_data = to_tag.replace('<to>','').replace('</to>','')		
-			subject_tag = parse_d.getElementsByTagName('subject')[0].toxml()
-			subject_data = subject_tag.replace('<subject>','').replace('</subject>','')			
-			body_tag = parse_d.getElementsByTagName('body')[0].toxml()
-			body_data = body_tag.replace('<body>','').replace('</body>','')
-
+			try:
+				to_tag = parse_d.getElementsByTagName('to')[0].toxml()
+				to_data = to_tag.replace('<to>','').replace('</to>','')		
+				subject_tag = parse_d.getElementsByTagName('subject')[0].toxml()
+				subject_data = subject_tag.replace('<subject>','').replace('</subject>','')			
+				body_tag = parse_d.getElementsByTagName('body')[0].toxml()
+				body_data = body_tag.replace('<body>','').replace('</body>','')
+			except IndexError: 
+				RaisePopup('Xml Error','The Draft is Bad')
+				to_data,subject_data,body_data = '','',''
 			self.destiny_camp.SetValue(to_data)
 			self.sub_camp.SetValue(subject_data)
 			self.body_camp.SetValue(body_data)
 		dlg.Destroy	
 
 	def on_save(self,e):
-		dlg = wx.FileDialog(self, message="Save Draft as...",defaultDir=os.getcwd(), defaultFile="", wildcard="XML files (*.xml)|*.xml", style=wx.SAVE)	
+		dlg = wx.FileDialog(self, message="Save Draft as...",defaultDir="", defaultFile="", wildcard="XML files (*.xml)|*.xml", style=wx.SAVE)	
 		if dlg.ShowModal() == wx.ID_OK:
 			path = dlg.GetPaths()
 			path = "".join(c for c in path if c not in trimmer)
@@ -445,7 +513,7 @@ class Fedora(wx.Frame):
 			body_getter = self.body_camp.GetValue()
 			file_saver = open(path,'w')
 			file_saver.write('<?xml version ="1.0" encoding="utf-8" ?>\n')
-			file_saver.write("<mail>")
+			file_saver.write("<mail>\n")
 			file_saver.write("\t<to>"+destiny_get+"</to>\n")
 			file_saver.write("\t<subject>"+subject_get+"</subject>\n")
 			file_saver.write("\t<body>"+body_getter+"</body>\n")
@@ -475,7 +543,9 @@ class Fedora(wx.Frame):
 			self.raiseauth_window.Explode()
 			del self.raiseauth_window
 	def SetInsertionPointEnd(self):
-		self.fileTextCtrl.SetInsertionPointEnd()	
+		self.fileTextCtrl.SetInsertionPointEnd()
+	def popHelp(self,e):
+		webbrowser.open_new('http://yubinapp.wordpress.com')	
 	def updateFiles(self,path):	
 		if path in attos:
 			pass
@@ -499,9 +569,12 @@ class Fedora(wx.Frame):
 		try:
 			self.info_window.call()
 		except AttributeError,e :
-			account_dat = shelve.open('account.dat')
-			self.info_window= Info(self,account_dat['username'])
-			account_dat.close()
+			try:
+				account_dat = shelve.open('account.dat')
+				self.info_window= Info(self,account_dat['username'])
+				account_dat.close()
+			except KeyError:
+				RaisePopup('Introduce Your Keys','Introduce Your Keys')	
 	def account_data_close(self,e):
 		try:
 			self.info_window.call()
@@ -539,14 +612,14 @@ class Fedora(wx.Frame):
 		subject_get = self.sub_camp.GetValue()
 		body_get = self.body_camp.GetValue()
 		fol = re.match(regexion,destiny_get)
-		if fol is None :
-			wx.MessageBox('No Destiny?','Please insert a valid destiny', wx.OK | wx.ICON_INFORMATION)
-		elif not destiny_get :
-			wx.MessageBox('No Destiny?','Please insert a valid destiny', wx.OK | wx.ICON_INFORMATION)	
+		if not destiny_get :
+			RaisePopup('Destiny in blank','No Destiny?')	
+		elif fol is None :
+			RaisePopup('Invalid Destiny Format','Set a valid Destiny')	
 		elif not subject_get:
-			wx.MessageBox('No subject?','Please insert a subject', wx.OK | wx.ICON_INFORMATION)
+			RaisePopup('Subject in blank','No Subject?')
 		elif not body_get:	
-			wx.MessageBox('No body?','Please insert something?', wx.OK | wx.ICON_INFORMATION)
+			RaisePopup('Body in blank','No Body?')
 		else:
 			if on_con() :
 	
@@ -569,11 +642,9 @@ class Fedora(wx.Frame):
 			password_key = account_dat['password']
 			account_dat.close()	
 		except KeyError:
-			understand =RaiseAuth(self)
-			understand.ShowModal()
-			understand.Destroy()
+			self.raiseauth_window =RaiseAuth(self)
 		else:
-			pass
+			self.Show()
 	def open_all(self,e):
 		try:
 			self.info_window.call()
@@ -606,68 +677,75 @@ class Fedora(wx.Frame):
 			pass	
 		else:
 			self.man_f_window.Explode()					
-		self.Close()
+		self.Destroy()
 
 class Mail(object):
 
-	def __init__(self, account, reciever,subject, text,password,parent, *attachments ):
+	def __init__(self, account, recieverstr,subject, text,password,parent, *attachments ):
 		self.account = account
-		self.reciever=reciever
+		self.recieverstr=recieverstr
 		self.body = text
 		self.subject = subject
 		self.__password = password
 		self.file_attachments = attachments
 		self.parent = parent
+		self.yeah_bool = True
+		self.reciever = str()
 	def send_it(self):	
-		length = len(self.file_attachments)
-		progress_frame = Gauger(self.parent,length+3)
-
-		msg = MIMEMultipart('alternative')
-		msg['To'] = self.reciever
-		msg['From'] = self.account
-		msg['Date'] = formatdate(localtime=True)
-		msg['Subject'] = self.subject
-		msg.attach(MIMEText(self.body))
-		progress_frame.add_to_gauge()
-		if self.file_attachments:
-			for file_att in self.file_attachments:
-				try:
-					file_parser = MIMEBase('application', "octet-stream") 
-					file_parser.set_payload( open(file_att,"rb").read() )
-					Encoders.encode_base64(file_parser)
-					file_parser.add_header('Content-Disposition', 'attachment; filename="%s"' % os.path.basename(file_att))
-					msg.attach(file_parser)
-					progress_frame.add_to_gauge()
-				except IOError:
-					wx.MessageBox('file attachment deleted or removed','Oops!', wx.OK | wx.ICON_INFORMATION)
-		gmail_serv =re.match(gmail_regex,self.account)
-		yahoo_serv =re.match(yahoo_regex, self.account)
-		hotmail_serv = re.match(hotmail_regex,self.account)
-		if gmail_serv:
-			smtpserver = smtplib.SMTP("smtp.gmail.com",587)			
-		elif yahoo_serv:
-			smtpserver = smtplib.SMTP("smtp.mail.yahoo.com",587)
-		elif hotmail_serv:
-			smtpserver = smtplib.SMTP("smtp.live.com",587)
-		else:
-			smtpserver = smtplib.SMTP("smtp.gmail.com",587)	
-		smtpserver.ehlo()
-		smtpserver.starttls()
-		smtpserver.ehlo()
-		smtpserver.login(self.account, self.getpwd())
-		progress_frame.add_to_gauge()
-		try:
-			
-			smtpserver.sendmail(self.account,self.reciever, msg.as_string())
-		except smtplib.SMTPSenderRefused :	
-			progress_frame.Explode()
-			wx.MessageBox('Please Use Google Drive or MEGA links','The File Load is Too Big', wx.OK | wx.ICON_INFORMATION)
-			self.parent.statbar.SetStatusText("Mail Error :(" )
-		else:
+		self.recieverstr = self.recieverstr.split(',')
+		progress_frame = Gauger(self.parent,(len(self.file_attachments)+3)*len(self.recieverstr))
+		for self.reciever in self.recieverstr:
+			self.reciever =self.reciever.strip()
+			msg = MIMEMultipart('alternative')
+			msg['To'] = self.reciever
+			msg['From'] = self.account
+			msg['Date'] = formatdate(localtime=True)
+			msg['Subject'] = self.subject
+			msg.attach(MIMEText(self.body))
 			progress_frame.add_to_gauge()
-			self.parent.successDialog()
-			self.parent.statbar.SetStatusText(str("Success at sending mail to " + self.reciever))
-		smtpserver.close()
+			if self.file_attachments:
+				for file_att in self.file_attachments:
+					try:
+						file_parser = MIMEBase('application', "octet-stream") 
+						file_parser.set_payload( open(file_att,"rb").read() )
+						Encoders.encode_base64(file_parser)
+						file_parser.add_header('Content-Disposition', 'attachment; filename="%s"' % os.path.basename(file_att))
+						msg.attach(file_parser)
+						progress_frame.add_to_gauge()
+					except IOError:
+						self.yeah_bool= False
+						RaisePopup('Where is the file?','File unavailable')
+			gmail_serv =re.match(gmail_regex,self.account)
+			yahoo_serv =re.match(yahoo_regex, self.account)
+			hotmail_serv = re.match(hotmail_regex,self.account)
+			if gmail_serv:
+				smtpserver = smtplib.SMTP("smtp.gmail.com",587)			
+			elif yahoo_serv:
+				smtpserver = smtplib.SMTP("smtp.mail.yahoo.com",587)
+			elif hotmail_serv:
+				smtpserver = smtplib.SMTP("smtp.live.com",587)
+			else:
+				smtpserver = smtplib.SMTP("smtp.gmail.com",587)	
+			smtpserver.ehlo()
+			smtpserver.starttls()
+			smtpserver.ehlo()
+			smtpserver.login(self.account, self.getpwd())
+			progress_frame.add_to_gauge()
+			try:
+			
+				smtpserver.sendmail(self.account,self.reciever, msg.as_string())
+			except smtplib.SMTPSenderRefused :	
+				progress_frame.Explode()
+				self.yeah_bool= False
+				RaisePopup('File Load Too Big','Over Server Capacity')
+				self.parent.statbar.SetStatusText("Mail Error :(" )
+			else:
+				progress_frame.add_to_gauge()
+				self.parent.statbar.SetStatusText(str("Success at sending mail to " + self.reciever))
+
+			smtpserver.close()
+			if self.yeah_bool:
+				SuccessPopup()
 	def	getpwd(self):
 		return self.__password
 
@@ -680,7 +758,7 @@ def on_con():
 #superabstraction        
 if __name__ == '__main__':
 	app = wx.App()
-	Fedora()
+	Yubin()
 	app.MainLoop()
 
 
