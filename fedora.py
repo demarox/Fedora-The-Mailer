@@ -10,7 +10,10 @@ import re
 import webbrowser
 import string
 import random
+import time
+import threading
 import urllib2
+from threading import Thread
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
@@ -30,7 +33,42 @@ gmail_regex = "^[a-z0-9](\.?[a-z0-9]){5,}@g(oogle)?mail\.com$"
 regexion = "^.+\\@(\\[?)[a-zA-Z0-9\\-\\.]+\\.([a-zA-Z]{2,3}|[0-9]{1,3})(\\]?)$"
 attos = []        
 SEND_ATT,OPEN_PROMPT,SAVE_PROMT, CLOSE,DEF_ACC,CUST_ACC,RESET_ALL,MY_ACC,MAN_F,MAN_F_X,OPEN_ALL,ACC_X,CUST_X,HELP = 1,2,3,4,5,6,7,8,9,10,11,12,13,14
-		
+
+class Man_at_directory(wx.Frame)
+	def __init__(self,parent):
+		super(Man_at_directory,self).__init__(None,style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION ,size = (300,250), pos=(920,80))				
+		self.parent = parent
+		self.DirectoryUI()
+		self.Show()
+	def DirectoryUI(self):
+		#CREATING THE DRAG
+#HIDE DIRECTORY
+		panel = wx.PyScrolledWindow(self,-1,style = wx.VSCROLL)
+		panel.SetScrollbars(0, 1, 0, 1)
+		panel.SetScrollRate( 1, 1 ) 
+		box = wx.BoxSizer(wx.VERTICAL)
+		box.Add((-1,115))#path
+		for directory_element in directory_cache_list:
+			directory_cut = directory_element[:22]+"..." if len(directory_element) > 25 else directory_element
+
+			self.box_directory = wx.BoxSizer(wx.HORIZONTAL)
+			self.static_direc = wx.StaticText(panel,label =directory_element )
+			box.Add(self.static_direc, flag = wx.RIGHT | wx.LEFT border = 5)
+			self.static_button = wx.Buttton(panel, style = wx.NO_BORDER, bitmap = bmp , size = (GetWidth()+5, GetHeight()+5) )
+			box.Add(self.static_button, flag = wx.ALIGN_RIGHT, border = 5)
+			self.static_button.Hide()
+			vbox.Add(self.box_directory, flag = wx.ALL | wx.ALIGN_CENTRE, border = 5)
+			vbox.Add((-1,10))
+		panel.SetSizer(box)
+
+	def destroy_direc(self,direc):
+		#DESTROY DIREC
+	def create_direc(self,direc_c):
+		#CREATE  DIREC	
+	def call(self):
+		#DIREC CALL	
+	def Explode(self):
+			
 class Gauger(wx.Frame):
 	def __init__(self,grandfather,task_range):
 		super(Gauger, self).__init__(None,style=wx.CAPTION)
@@ -63,10 +101,12 @@ class Gauger(wx.Frame):
 		completed += 1
 		self.gauge.SetValue(completed)
 		self.text.SetLabel('Tasks Done ('+str(completed)+')')
+		wx.Yield()
 		if completed == self.task_range :
-			self.Destroy()
+			self.Close()
+			
 	def Explode(self):
-			self.Destroy()							
+			self.Close()							
 class RaiseAuth(wx.Frame):
 	def __init__(self,parent,cancel_view = False):
 		super(RaiseAuth, self).__init__(None,style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION ,size = (300,250), pos=(920,80))
@@ -150,6 +190,10 @@ class RaiseAuth(wx.Frame):
 					connection['password'] = self.get_pass
 					connection.close()
 					self.parent.Show()
+					if self.cancel_view== False:
+						self.parent.open_all(True)
+					else:
+						self.parent.set_info_label(self.get_user)
 					self.Destroy()
 			else:	
 				RaisePopup('No @ Support Error','Only gmail,yahoo! and hotmail')
@@ -250,7 +294,7 @@ class Man_at_files(wx.Frame):
 		for path in attos:
 			asc_id =self.id_generator()
 			self.in_box[path] = wx.BoxSizer(wx.HORIZONTAL)
-			label = '...'+path[-28:]
+			label = '...'+path[-27:]
 			self.dest_text[path] = wx.StaticText(panel,label =label)
 			self.dest_text[path].SetFont(self.parent.font)
 			self.in_box[path].Add(self.dest_text[path])	
@@ -272,7 +316,6 @@ class Man_at_files(wx.Frame):
 			self.dest_text[idi].Hide()
 			self.dict_button[idi].Hide()
 			self.in_box[idi].Remove(True)
-
 
 			self.parent.clear_and_update()
 	def call(self):
@@ -300,9 +343,9 @@ class Info(wx.Frame):
 			box1 = wx.BoxSizer(wx.HORIZONTAL)
 			vbox.Add((-1,10))
 
-			user_text = wx.StaticText(panel,label = self.user)
-			user_text.SetFont(self.parent.font)
-			box1.Add(user_text)
+			self.user_text = wx.StaticText(panel,label = self.user)
+			self.user_text.SetFont(self.parent.font)
+			box1.Add(self.user_text)
 			vbox.Add(box1,flag = wx.ALIGN_CENTRE,border = 5)
 			vbox.Add((-1,15))
 
@@ -319,6 +362,8 @@ class Info(wx.Frame):
 			box2.Add(self.link)
 			vbox.Add(box2,flag = wx.ALIGN_CENTRE,border = 5)
 			panel.SetSizer(vbox)
+		def new_id(self,new_user):
+			self.user_text.SetLabel(new_user)
 		def call(self):
 			return 	
 		def Explode(self):
@@ -326,6 +371,7 @@ class Info(wx.Frame):
 class Yubin(wx.Frame):
 	def __init__(self, title= 'Yubin'):
 		super(Yubin, self).__init__(None,id= -1, title = title, style  = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION|wx.CLOSE_BOX, size= (500,570))
+		self.count = 0
 		self.GeneralUI()
 #		self.Aproveaccount()
 		self.Centre()
@@ -583,6 +629,11 @@ class Yubin(wx.Frame):
 		else:
 			self.info_window.Explode()
 			del self.info_window
+	def set_info_label(self,new_user):
+		try:
+			self.info_window.new_id(new_user)
+		except AttributeError,e :
+			pass		
 	def select_mails(self,e):
 			self.destiny_camp.Clear()
 			self.destiny_camp.SetInsertionPointEnd()
@@ -608,33 +659,35 @@ class Yubin(wx.Frame):
 			self.man_f_window.Explode()
 			del self.man_f_window			
 	def send_mail_instant(self, e):
-		destiny_get = self.destiny_camp.GetValue()
-		subject_get = self.sub_camp.GetValue()
-		body_get = self.body_camp.GetValue()
-		fol = re.match(regexion,destiny_get)
-		if not destiny_get :
+		self.destiny_get = self.destiny_camp.GetValue()
+		self.subject_get = self.sub_camp.GetValue()
+		self.body_get = self.body_camp.GetValue()
+		fol = re.match(regexion,self.destiny_get)
+		if not self.destiny_get :
 			RaisePopup('Destiny in blank','No Destiny?')	
 		elif fol is None :
 			RaisePopup('Invalid Destiny Format','Set a valid Destiny')	
-		elif not subject_get:
+		elif not self.subject_get:
 			RaisePopup('Subject in blank','No Subject?')
-		elif not body_get:	
+		elif not self.body_get:	
 			RaisePopup('Body in blank','No Body?')
 		else:
+
 			if on_con() :
 	
 				s =shelve.open('account.dat')
-				a_mail = Mail(s['username'],destiny_get,subject_get,body_get,s['password'],self,*attos)
-				s.close()
-				a_mail.send_it()
+				a_mail = Mail(s['username'],self.destiny_get,self.subject_get,self.body_get,s['password'],self,*attos)
+				s.close()				
+				a_mail.create_thread()
+
 				#Cache for name directory
 				c = shelve.open('d_cache.dat')
 				
-				c[destiny_get] = destiny_get
+				c[self.destiny_get] = self.destiny_get
 				c.close()
-			else: 
+			else:
 				self.handleDialog()	
-				self.statbar.SetStatusText("Error at sending mail")	
+				self.statbar.SetStatusText("Error at sending mail")		
 	def Aproveaccount(self):
 		account_dat = shelve.open('account.dat')
 		try:
@@ -645,6 +698,7 @@ class Yubin(wx.Frame):
 			self.raiseauth_window =RaiseAuth(self)
 		else:
 			self.Show()
+			self.open_all(True)
 	def open_all(self,e):
 		try:
 			self.info_window.call()
@@ -680,9 +734,10 @@ class Yubin(wx.Frame):
 		self.Destroy()
 
 class Mail(object):
-
 	def __init__(self, account, recieverstr,subject, text,password,parent, *attachments ):
+		
 		self.account = account
+		self.accountpriv = account
 		self.recieverstr=recieverstr
 		self.body = text
 		self.subject = subject
@@ -691,70 +746,115 @@ class Mail(object):
 		self.parent = parent
 		self.yeah_bool = True
 		self.reciever = str()
-	def send_it(self):	
+	def create_thread(self):
 		self.recieverstr = self.recieverstr.split(',')
 		progress_frame = Gauger(self.parent,(len(self.file_attachments)+3)*len(self.recieverstr))
+		start_time = time.time()
 		for self.reciever in self.recieverstr:
-			self.reciever =self.reciever.strip()
-			msg = MIMEMultipart('alternative')
-			msg['To'] = self.reciever
-			msg['From'] = self.account
-			msg['Date'] = formatdate(localtime=True)
-			msg['Subject'] = self.subject
-			msg.attach(MIMEText(self.body))
+
+			assign_MIME_thread =threading.Thread(target=self.assign_MIME)
+			assign_MIME_thread.start()	
+			assign_MIME_thread.join()
 			progress_frame.add_to_gauge()
 			if self.file_attachments:
 				for file_att in self.file_attachments:
-					try:
-						file_parser = MIMEBase('application', "octet-stream") 
-						file_parser.set_payload( open(file_att,"rb").read() )
-						Encoders.encode_base64(file_parser)
-						file_parser.add_header('Content-Disposition', 'attachment; filename="%s"' % os.path.basename(file_att))
-						msg.attach(file_parser)
-						progress_frame.add_to_gauge()
-					except IOError:
-						self.yeah_bool= False
+					attach_thread = threading.Thread(target=self.attach,args=(file_att,))
+					attach_thread.start()	
+					attach_thread.join()
+					if self.yeah_bool ==False:
 						RaisePopup('Where is the file?','File unavailable')
-			gmail_serv =re.match(gmail_regex,self.account)
-			yahoo_serv =re.match(yahoo_regex, self.account)
-			hotmail_serv = re.match(hotmail_regex,self.account)
-			if gmail_serv:
-				smtpserver = smtplib.SMTP("smtp.gmail.com",587)			
-			elif yahoo_serv:
-				smtpserver = smtplib.SMTP("smtp.mail.yahoo.com",587)
-			elif hotmail_serv:
-				smtpserver = smtplib.SMTP("smtp.live.com",587)
-			else:
-				smtpserver = smtplib.SMTP("smtp.gmail.com",587)	
-			smtpserver.ehlo()
-			smtpserver.starttls()
-			smtpserver.ehlo()
-			smtpserver.login(self.account, self.getpwd())
-			progress_frame.add_to_gauge()
-			try:
-			
-				smtpserver.sendmail(self.account,self.reciever, msg.as_string())
-			except smtplib.SMTPSenderRefused :	
-				progress_frame.Explode()
-				self.yeah_bool= False
-				RaisePopup('File Load Too Big','Over Server Capacity')
-				self.parent.statbar.SetStatusText("Mail Error :(" )
-			else:
-				progress_frame.add_to_gauge()
-				self.parent.statbar.SetStatusText(str("Success at sending mail to " + self.reciever))
+						self.yeah_bool = True
+					else:	
+						progress_frame.add_to_gauge()
 
-			smtpserver.close()
-			if self.yeah_bool:
-				SuccessPopup()
+			smtp_thread = threading.Thread(target=self.smtp_create)
+			smtp_thread.start()	
+			smtp_thread.join()
+			progress_frame.add_to_gauge()
+
+			send_thread = threading.Thread(target=self.send)
+			send_thread.start()	
+			send_thread.join()
+			progress_frame.add_to_gauge()
+		print time.time() - start_time, "seconds"	
+		if self.yeah_bool:
+			SuccessPopup()
+		elif self.yeah_bool == False:
+			RaisePopup('File Load Too Big','Over Server Capacity')	
+	def assign_MIME(self):	
+#		self.recieverstr = self.recieverstr.split(',')
+#		progress_frame = Gauger(self.parent,(len(self.file_attachments)+3)*len(self.recieverstr))
+#		for self.reciever in self.recieverstr:
+		self.reciever =self.reciever.strip()
+		self.msg = MIMEMultipart('alternative')
+		self.msg['To'] = self.reciever
+		self.msg['From'] = self.account
+		self.msg['Date'] = formatdate(localtime=True)
+		self.msg['Subject'] = self.subject
+		self.msg.attach(MIMEText(self.body))
+#			self.progress_frame.add_to_gauge()
+	def attach(self,file_attachment):
+#		if self.file_attachments:
+#		for file_att in self.file_attachments:
+			try:
+				file_parser = MIMEBase('application', "octet-stream") 
+				file_parser.set_payload( open(file_attachment,"rb").read() )
+				Encoders.encode_base64(file_parser)
+				file_parser.add_header('Content-Disposition', 'attachment; filename="%s"' % os.path.basename(file_attachment))
+				self.msg.attach(file_parser)
+#					self.progress_frame.add_to_gauge()
+			except IOError:
+				self.yeah_bool= False
+#				RaisePopup('Where is the file?','File unavailable')
+
+	def smtp_create(self):					
+		gmail_serv =re.match(gmail_regex,self.account)
+		yahoo_serv =re.match(yahoo_regex, self.account)
+		hotmail_serv = re.match(hotmail_regex,self.account)
+		if gmail_serv:
+			self.smtpserver = smtplib.SMTP("smtp.gmail.com",587)			
+		elif yahoo_serv:
+			self.smtpserver = smtplib.SMTP("smtp.mail.yahoo.com",587)
+		elif hotmail_serv:
+			self.smtpserver = smtplib.SMTP("smtp.live.com",587)
+		else:
+			self.smtpserver = smtplib.SMTP("smtp.gmail.com",587)	
+		self.smtpserver.ehlo()
+		self.smtpserver.starttls()
+		self.smtpserver.ehlo()
+		self.smtpserver.login(self.accountpriv, self.getpwd())
+#
+#			self.progress_frame.add_to_gauge()
+	def send(self):
+		try:
+			pass
+			self.smtpserver.sendmail(self.account,self.reciever, self.msg.as_string())
+		except smtplib.SMTPSenderRefused :	
+#				self.progress_frame.Explode()
+			self.yeah_bool= False
+#				RaisePopup('File Load Too Big','Over Server Capacity')
+			self.parent.statbar.SetStatusText("Mail Error :(" )
+		else:
+#				self.progress_frame.add_to_gauge()
+#				self.progress_frame.Explode()
+			self.parent.statbar.SetStatusText(str("Success at sending mail to " + self.reciever))
+
+		self.smtpserver.close()
+#			if self.yeah_bool:
+#				self.success = SuccessPopup()
+			
 	def	getpwd(self):
 		return self.__password
+
 
 def on_con():
 	try:
 		response=urllib2.urlopen('http://example.com',timeout=5)
 		return True
 	except urllib2.URLError as err: pass
-	return False						
+	return False
+def success():
+	SuccessPopup()							
 #superabstraction        
 if __name__ == '__main__':
 	app = wx.App()
