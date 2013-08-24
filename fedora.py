@@ -20,15 +20,12 @@ from email.MIMEText import MIMEText
 from email.Utils import COMMASPACE, formatdate
 from email import Encoders
 from xml.dom.minidom import parseString
-c = shelve.open('DDRM3A2.dat')
-ID = 'mail@gmail.com'
-tagselece = ID.find('@')
-tag = ID[:tagselece]
-c[ID] = {'Tag':tag,'mail':ID}
-c.close()
-c = shelve.open('c_cache.dat')
-directory_cache_list = c.keys()
-c.close()
+#c = shelve.open('DDRM3A2.dat')
+#ID = 'mail@gmail.com'
+#tagselece = ID.find('@')
+#tag = ID[:tagselece]
+#c[ID] = {'Tag':tag,'mail':ID}
+#c.close()s
 trimmer='[]'
 supported_regex = "\w+([-+.]\w+)*@(yahoo|gmail|hotmail|googlemail)\.com"
 hotmail_regex = "\w+([-+.]\w+)*@hotmail.com"
@@ -47,19 +44,18 @@ class Man_at_contacts(wx.Frame):
 		self.box_mail = {}
 		self.text = {}
 		self.mail_text = {}
-		self.list  = directory_cache_list
 		self.ContactsUI()
 		self.SetTitle('Drag Contact')
 		self.Show()
 	def ContactsUI(self):
 		
-		panel = wx.PyScrolledWindow(self,-1,style = wx.VSCROLL)
-		panel.SetScrollbars(0, 1, 0, 1)
-		panel.SetScrollRate( 1, 1 ) 
-		box = wx.BoxSizer(wx.VERTICAL)
+		self.panel = wx.PyScrolledWindow(self,-1,style = wx.VSCROLL)
+		self.panel.SetScrollbars(0, 1, 0, 1)
+		self.panel.SetScrollRate( 1, 1 ) 
+		self.box = wx.BoxSizer(wx.VERTICAL)
 		bmp3 = wx.Image('img/contacts.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-		panel.bitmap2 = wx.StaticBitmap(panel, -1, bmp3, (0, 0))
-		box.Add((-1,140))
+		self.panel.bitmap2 = wx.StaticBitmap(self.panel, -1, bmp3, (0, 0))
+		self.box.Add((-1,140))
 	#		panel.SetSizer(box)
 		core_list = shelve.open('DDRM3A2.dat')
 		core_keys = core_list.keys()
@@ -71,40 +67,94 @@ class Man_at_contacts(wx.Frame):
 				directory_cut = key[:22]+"..." if len(key) > 25 else key
 
 				self.boxer = wx.BoxSizer(wx.HORIZONTAL)
-				self.title = wx.StaticText(panel,label = value['Tag'] )
+				self.title = wx.StaticText(self.panel,label = value['Tag'] )
 				self.title.SetFont(self.parent.font3)
 				self.title.SetForegroundColour((117,113,113))
 				self.title.parameterVal = key
 				self.boxer.Add(self.title)
-				box.Add(self.boxer, flag = wx.ALIGN_LEFT| wx.LEFT, border = 25)
+				self.box.Add(self.boxer, flag = wx.ALIGN_LEFT| wx.LEFT, border = 25)
 
 
 				self.box_mail = wx.BoxSizer(wx.HORIZONTAL)
-				self.text = DragTxt(panel,self.parent, key)
+				self.text = DragTxt(self.panel,self.parent, key)
 				
 				self.box_mail.Add(self.text)
-				box.Add(self.box_mail, flag = wx.ALIGN_LEFT|wx.LEFT, border = 25)
- 				box.Add((-1,10))
+				self.box.Add(self.box_mail, flag = wx.ALIGN_LEFT|wx.LEFT, border = 25)
+ 				self.box.Add((-1,10))
  		else:
- 			box.Add((-1,50))
+ 			self.box.Add((-1,50))
  			self.boxer = wx.BoxSizer(wx.HORIZONTAL)
-			self.title = wx.StaticText(panel,label = 'Ctrl+H To Add Contacts' )
+			self.title = wx.StaticText(self.panel,label = 'Ctrl+D To Add Contacts' )
 			self.title.SetFont(self.parent.font3)
 			self.title.SetForegroundColour((117,113,113))
 			self.boxer.Add(self.title)
-			box.Add(self.boxer, flag = wx.ALIGN_CENTRE, border = 25)	
-		panel.SetSizer(box)
-		core_list.close()
-	def destroy_direc(self,direc):
-		#DESTROY DIREC
-		pass
-	def create_direc(self,direc):
-		#CREATE  DIREC	
-		pass
+			self.box.Add(self.boxer, flag = wx.ALIGN_CENTRE, border = 25)	
+		self.panel.SetSizer(self.box)
+		core_list.close()	
 	def Explode(self):
 		self.Close()
 	def call(self):
 		return 
+class Contact_Engineer(wx.Frame):
+	def __init__(self,parent):
+		super(Contact_Engineer,self).__init__(None,style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION |wx.CLOSE_BOX,size = (350,400), pos=(300,300))				
+		self.parent = parent
+		self.box_directory = {}
+		self.static_direc = {}
+		self.box_mail = {}
+		self.text = {}
+		self.mail_text = {}
+		self.ContactsUI()
+		self.SetTitle('Edit Contacts')
+		self.Show()
+	def ContactsUI(self):
+		
+		self.panel = wx.PyScrolledWindow(self,-1,style = wx.VSCROLL)
+		self.panel.SetScrollbars(0, 1, 0, 1)
+		self.panel.SetScrollRate( 1, 1 ) 
+		self.box = wx.BoxSizer(wx.VERTICAL)
+		bmp3 = wx.Image('img/contact_engineer.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		self.panel.bitmap2 = wx.StaticBitmap(self.panel, -1, bmp3, (0, 0))
+		self.box.Add((-1,140))
+	#		panel.SetSizer(box)
+		core_list = shelve.open('DDRM3A2.dat')
+		core_keys = core_list.keys()
+		core_values = core_list.values()
+		if core_list:
+	
+			for key,value in core_list.iteritems():
+
+				directory_cut = key[:22]+"..." if len(key) > 25 else key
+
+				self.boxer = wx.BoxSizer(wx.HORIZONTAL)
+				self.title = wx.StaticText(self.panel,value = value['Tag'] )
+				self.title.SetFont(self.parent.font3)
+				self.title.SetForegroundColour((117,113,113))
+				self.title.parameterVal = key
+				self.boxer.Add(self.title)
+				self.box.Add(self.boxer, flag = wx.ALIGN_LEFT| wx.LEFT, border = 25)
+
+
+				self.box_mail = wx.BoxSizer(wx.HORIZONTAL)
+				self.text = DragTxt(self.panel,self.parent, key)
+				
+				self.box_mail.Add(self.text)
+				self.box.Add(self.box_mail, flag = wx.ALIGN_LEFT|wx.LEFT, border = 25)
+ 				self.box.Add((-1,10))
+ 		else:
+ 			self.box.Add((-1,50))
+ 			self.boxer = wx.BoxSizer(wx.HORIZONTAL)
+			self.title = wx.StaticText(self.panel,label = 'Ctrl+D To Add Contacts' )
+			self.title.SetFont(self.parent.font3)
+			self.title.SetForegroundColour((117,113,113))
+			self.boxer.Add(self.title)
+			self.box.Add(self.boxer, flag = wx.ALIGN_CENTRE, border = 25)	
+		self.panel.SetSizer(self.box)
+		core_list.close()	
+	def Explode(self):
+		self.Close()
+	def call(self):
+		return 	
 class DragTxt(wx.StaticText):
 	def __init__(self, parent,grandfather, key):
 			wx.StaticText.__init__(self, parent, label=key)
@@ -123,10 +173,11 @@ class DragTxt(wx.StaticText):
 		self.grandfather.append_to_Ctrl(self.key)	
 class Add_Contact_PopUp(wx.Frame):
 	def __init__(self,parent):
-		super(RaiseAuth, self).__init__(None,style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX ,size = (300,200), pos=(920,80))
+		super(Add_Contact_PopUp, self).__init__(None,style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX ,size = (300,200))
 		self.parent = parent
 		self.Simple_UI()
 		self.SetTitle("Add Someone!")
+		self.Centre()
 		self.Show()
 	def Simple_UI(self):
 		pan = wx.Panel(self)
@@ -136,29 +187,42 @@ class Add_Contact_PopUp(wx.Frame):
 		vbox = wx.BoxSizer(wx.VERTICAL)	
 		vbox.Add((-1,110))
 	
-		user_box = wx.BoxSizer(wx.HORIZONTAL)
-		user_text = wx.StaticText(pan, label = "Name")
-		user_text.SetFont(self.parent.font)
-		user_box.Add(user_text ,flag = wx.ALIGN_CENTRE)
-		self.user_camp = wx.TextCtrl(pan)
-		user_box.Add(self.user_camp, flag = wx.ALIGN_CENTRE |wx.EXPAND|wx.ALL,proportion = 1)
-		vbox.Add(user_box,flag =  wx.ALIGN_CENTRE |wx.EXPAND|wx.RIGHT|wx.LEFT, border = 20)
+		name_box = wx.BoxSizer(wx.HORIZONTAL)
+		name_text = wx.StaticText(pan, label = "Name :")
+		name_text.SetFont(self.parent.font)
+		name_box.Add(name_text ,flag = wx.ALIGN_CENTRE)
+		self.name_camp = wx.TextCtrl(pan)
+		name_box.Add(self.name_camp, flag = wx.ALIGN_CENTRE |wx.EXPAND|wx.ALL,proportion = 1)
+		vbox.Add(name_box,flag =  wx.ALIGN_CENTRE |wx.EXPAND|wx.RIGHT|wx.LEFT, border = 20)
 		vbox.Add((-1,9))
-		password_box = wx.BoxSizer(wx.HORIZONTAL)
-		password_text = wx.StaticText(pan, label = "Mail")
-		password_box.Add(password_text)
+		mail_box = wx.BoxSizer(wx.HORIZONTAL)
+		mail_text = wx.StaticText(pan, label = "Mail :")
+		mail_text.SetFont(self.parent.font)
+		mail_box.Add(mail_text)
 
-		self.button = wx.BitmapButton(panel, id=wx.ID_ANY, style=wx.NO_BORDER, bitmap=bmp7,size=(bmp.GetWidth()+5, bmp.GetHeight()+5))
+		self.button = wx.BitmapButton(pan, id=wx.ID_ANY, style=wx.NO_BORDER, bitmap=bmp7,size=(bmp7.GetWidth()+5, bmp7.GetHeight()+5))
 
-		self.password_camp = wx.TextCtrl(pan,style=wx.TE_PASSWORD)
-		password_box.Add(self.password_camp, proportion = 1)
-		password_box.Add(self.button, flag = wx.ALIGN_RIGHT,border =5)
-		vbox.Add(password_box,flag =  wx.ALIGN_CENTRE |wx.EXPAND|wx.RIGHT|wx.LEFT, border = 20)
+		self.mail_camp = wx.TextCtrl(pan)
+		mail_box.Add(self.mail_camp, proportion = 1)
+		mail_box.Add(self.button, flag = wx.ALIGN_RIGHT,border =5)
+		vbox.Add(mail_box,flag =  wx.ALIGN_CENTRE |wx.EXPAND|wx.RIGHT|wx.LEFT, border = 20)
 		pan.SetSizer(vbox)	
 
-		self.Bind()
+		self.Bind(wx.EVT_BUTTON, self.add_act , self.button)
 	def add_act(self,evt):
-					pass			
+		name=self.name_camp.GetValue() 
+		mail=self.mail_camp.GetValue() 
+		name = name.strip()
+		mail = mail.strip()
+		fol = re.match(regexion,mail)
+		if fol :	
+			self.parent.add_contact_permanency(name, mail)
+			self.parent.statbar.SetStatusText(name + ' correctly added!')	
+			self.Close()
+		else :
+			RaisePopup('Set a valid mail','please use a mail format')	
+			self.mail_camp.GetValue()
+			
 class Gauger(wx.Frame):
 	def __init__(self,grandfather,task_range):
 		super(Gauger, self).__init__(None,style=wx.CAPTION)
@@ -216,7 +280,7 @@ class RaiseAuth(wx.Frame):
 		vbox.Add((-1,110))
 	
 		user_box = wx.BoxSizer(wx.HORIZONTAL)
-		user_text = wx.StaticText(pan, label = "User")
+		user_text = wx.StaticText(pan, label = "User :")
 		user_text.SetFont(self.parent.font)
 		user_box.Add(user_text ,flag = wx.ALIGN_CENTRE)
 		self.user_camp = wx.TextCtrl(pan)
@@ -224,7 +288,7 @@ class RaiseAuth(wx.Frame):
 		vbox.Add(user_box,flag =  wx.ALIGN_CENTRE |wx.EXPAND|wx.RIGHT|wx.LEFT, border = 20)
 		vbox.Add((-1,10))
 		password_box = wx.BoxSizer(wx.HORIZONTAL)
-		password_text = wx.StaticText(pan, label = "Password")
+		password_text = wx.StaticText(pan, label = "Password :")
 		password_text.SetFont(self.parent.font)
 		password_box.Add(password_text)
 		self.password_camp = wx.TextCtrl(pan,style=wx.TE_PASSWORD)
@@ -516,7 +580,7 @@ class Yubin(wx.Frame):
 		cust_acc = wx.MenuItem(editmenu, CUST_ACC, '&Change Account\tCtrl+A')
 		reset_all = wx.MenuItem(editmenu, RESET_ALL, '&Reset \tCtrl+R')
 		change_account_x = wx.MenuItem(editmenu,CUST_X,'&Close Account Change Box\tAlt+A')
-		create_contact = wx.MenuItem(editmenu, CREATE_CONTACT, '&New Contact\tCtrl+H')
+		create_contact = wx.MenuItem(editmenu, CREATE_CONTACT, '&New Contact\tCtrl+D')
 		edit_contact_list = wx.MenuItem(editmenu,EDIT_CONTACT_LIST,'&Edit Contact List\tCtrl+P')
 		editmenu.AppendItem(cust_acc)
 		editmenu.AppendItem(reset_all)
@@ -635,7 +699,7 @@ class Yubin(wx.Frame):
 		self.Bind(wx.EVT_BUTTON, self.send_mail_instant , send_button)
 		self.Bind(wx.EVT_MENU,self.popHelp, help_opt)
 		#Accelerators
-		accel_tbl = wx.AcceleratorTable([(wx.ACCEL_ALT,  ord('A'), change_account_x.GetId() ),(wx.ACCEL_ALT,  ord('I'), account_data_x.GetId() ),(wx.ACCEL_CTRL,  ord('T'), send_att.GetId() ),(wx.ACCEL_CTRL,  ord('E'), open_all_opt.GetId() ),(wx.ACCEL_ALT,  ord('F'), manage_files_x.GetId() ),(wx.ACCEL_CTRL,  ord('F'), manage_files.GetId() ),(wx.ACCEL_CTRL,  ord('S'), save_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('O'), open_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('Q'), close_opt.GetId() ),(wx.ACCEL_CTRL,  ord('A'), cust_acc.GetId() ),(wx.ACCEL_CTRL,  ord('R'), reset_all.GetId() ),(wx.ACCEL_CTRL,  ord('I'), my_acc.GetId() ),(wx.ACCEL_CTRL,  ord('J'), import_opt.GetId() ),(wx.ACCEL_CTRL,  ord('K'), export_opt.GetId() ),(wx.ACCEL_CTRL,  ord('H'), create_contact.GetId() ),(wx.ACCEL_CTRL,  ord('P'), edit_contact_list.GetId() ),(wx.ACCEL_CTRL,  ord('L'), contact_list.GetId() ),(wx.ACCEL_ALT,  ord('L'), contact_list_x.GetId() )])
+		accel_tbl = wx.AcceleratorTable([(wx.ACCEL_ALT,  ord('A'), change_account_x.GetId() ),(wx.ACCEL_ALT,  ord('I'), account_data_x.GetId() ),(wx.ACCEL_CTRL,  ord('T'), send_att.GetId() ),(wx.ACCEL_CTRL,  ord('E'), open_all_opt.GetId() ),(wx.ACCEL_ALT,  ord('F'), manage_files_x.GetId() ),(wx.ACCEL_CTRL,  ord('F'), manage_files.GetId() ),(wx.ACCEL_CTRL,  ord('S'), save_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('O'), open_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('Q'), close_opt.GetId() ),(wx.ACCEL_CTRL,  ord('A'), cust_acc.GetId() ),(wx.ACCEL_CTRL,  ord('R'), reset_all.GetId() ),(wx.ACCEL_CTRL,  ord('I'), my_acc.GetId() ),(wx.ACCEL_CTRL,  ord('J'), import_opt.GetId() ),(wx.ACCEL_CTRL,  ord('K'), export_opt.GetId() ),(wx.ACCEL_CTRL,  ord('D'), create_contact.GetId() ),(wx.ACCEL_CTRL,  ord('P'), edit_contact_list.GetId() ),(wx.ACCEL_CTRL,  ord('L'), contact_list.GetId() ),(wx.ACCEL_ALT,  ord('L'), contact_list_x.GetId() )])
 		self.SetAcceleratorTable(accel_tbl)
 
 
@@ -725,7 +789,8 @@ class Yubin(wx.Frame):
 	def SetInsertionPointEnd(self):
 		self.fileTextCtrl.SetInsertionPointEnd()
 	def popHelp(self,e):
-		webbrowser.open_new('http://yubinapp.wordpress.com')	
+		webbrowser.open_new('http://yubinapp.wordpress.com')
+
 	def updateFiles(self,path):	
 		if path in attos:
 			pass
@@ -805,10 +870,6 @@ class Yubin(wx.Frame):
 				a_mail.create_thread()
 
 				#Cache for name directory
-				c = shelve.open('c_cache.dat')
-				
-				c[self.destiny_get] = self.destiny_get
-				c.close()
 			else:
 				self.handleDialog()	
 				self.statbar.SetStatusText("Error at sending mail")		
@@ -828,14 +889,22 @@ class Yubin(wx.Frame):
 	def on_export(self,e):
 		pass
 	def on_create_contact(self,e):
-		Add_Contact_PopUp()
+		Add_Contact_PopUp(self)
 	def on_edit_contact(self,e):
-		pass			
+		try:
+			self.contact_engineer_window.call()	
+		except AttributeError, e:
+			self.contact_list_hide(True)
+			self.contact_engineer_window = Contact_Engineer(self)
+
 	def contact_list_show(self,e):
 		try:
 			self.contact_window.call()
 		except AttributeError, e:
-			self.contact_window = Man_at_contacts(self)
+			try:
+				self.contact_engineer_window.call()	
+			except AttributeError, e:
+				self.contact_window = Man_at_contacts(self)
 	def contact_list_hide(self,e):
 		try:
 			self.contact_window.call()
@@ -852,6 +921,22 @@ class Yubin(wx.Frame):
 			self.destiny_camp.WriteText(", "+to_append)
 		else:
 			self.destiny_camp.WriteText(to_append)
+	def add_contact_permanency(self, name, mail):
+		c = shelve.open('DDRM3A2.dat')
+		try:
+			i = c[mail]
+		except KeyError,e:	
+			c[mail] = {'Tag':name, 'mail' :mail}
+			try:
+				self.contact_window.call()
+			except AttributeError,e :
+				c.close()
+			else:	
+				self.contact_window.Explode()
+				del self.contact_window
+				c.close()
+				self.contact_list_show(True)
+
 	def open_all(self,e):
 		try:
 			self.info_window.call()
@@ -893,7 +978,13 @@ class Yubin(wx.Frame):
 		except AttributeError,e :
 			pass
 		else:
-			self.contact_window.Explode()						
+			self.contact_window.Explode()
+		try:
+			self.contact_engineer_window.call()	
+		except AttributeError, e:
+			pass
+		else:
+			self.contact_engineer_window.Explode()								
 		self.Destroy()
 
 class Mail(object):
@@ -1023,9 +1114,3 @@ if __name__ == '__main__':
 	app = wx.App()
 	Yubin()
 	app.MainLoop()
-
-
-
-
-
-
