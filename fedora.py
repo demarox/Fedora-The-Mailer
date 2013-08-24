@@ -120,7 +120,45 @@ class DragTxt(wx.StaticText):
 			ds.SetData(d)
 			ds.DoDragDrop(True)
 	def append_to_Ctrl(self,evt):
-		self.grandfather.append_to_Ctrl(self.key)		
+		self.grandfather.append_to_Ctrl(self.key)	
+class Add_Contact_PopUp(wx.Frame):
+	def __init__(self,parent):
+		super(RaiseAuth, self).__init__(None,style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX ,size = (300,200), pos=(920,80))
+		self.parent = parent
+		self.Simple_UI()
+		self.SetTitle("Add Someone!")
+		self.Show()
+	def Simple_UI(self):
+		pan = wx.Panel(self)
+		bmp7 = wx.Bitmap("img/add.png", wx.BITMAP_TYPE_ANY)
+		bmp6 = wx.Image('img/add_contact.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		pan.bitmap6 = wx.StaticBitmap(pan, -1, bmp6, (0, 0))
+		vbox = wx.BoxSizer(wx.VERTICAL)	
+		vbox.Add((-1,110))
+	
+		user_box = wx.BoxSizer(wx.HORIZONTAL)
+		user_text = wx.StaticText(pan, label = "Name")
+		user_text.SetFont(self.parent.font)
+		user_box.Add(user_text ,flag = wx.ALIGN_CENTRE)
+		self.user_camp = wx.TextCtrl(pan)
+		user_box.Add(self.user_camp, flag = wx.ALIGN_CENTRE |wx.EXPAND|wx.ALL,proportion = 1)
+		vbox.Add(user_box,flag =  wx.ALIGN_CENTRE |wx.EXPAND|wx.RIGHT|wx.LEFT, border = 20)
+		vbox.Add((-1,9))
+		password_box = wx.BoxSizer(wx.HORIZONTAL)
+		password_text = wx.StaticText(pan, label = "Mail")
+		password_box.Add(password_text)
+
+		self.button = wx.BitmapButton(panel, id=wx.ID_ANY, style=wx.NO_BORDER, bitmap=bmp7,size=(bmp.GetWidth()+5, bmp.GetHeight()+5))
+
+		self.password_camp = wx.TextCtrl(pan,style=wx.TE_PASSWORD)
+		password_box.Add(self.password_camp, proportion = 1)
+		password_box.Add(self.button, flag = wx.ALIGN_RIGHT,border =5)
+		vbox.Add(password_box,flag =  wx.ALIGN_CENTRE |wx.EXPAND|wx.RIGHT|wx.LEFT, border = 20)
+		pan.SetSizer(vbox)	
+
+		self.Bind()
+	def add_act(self,evt):
+					pass			
 class Gauger(wx.Frame):
 	def __init__(self,grandfather,task_range):
 		super(Gauger, self).__init__(None,style=wx.CAPTION)
@@ -158,7 +196,8 @@ class Gauger(wx.Frame):
 			self.Close()
 			
 	def Explode(self):
-			self.Close()							
+			self.Close()
+
 class RaiseAuth(wx.Frame):
 	def __init__(self,parent,cancel_view = False):
 		super(RaiseAuth, self).__init__(None,style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION ,size = (300,250), pos=(920,80))
@@ -789,7 +828,7 @@ class Yubin(wx.Frame):
 	def on_export(self,e):
 		pass
 	def on_create_contact(self,e):
-		pass
+		Add_Contact_PopUp()
 	def on_edit_contact(self,e):
 		pass			
 	def contact_list_show(self,e):
