@@ -20,10 +20,14 @@ from email.MIMEText import MIMEText
 from email.Utils import COMMASPACE, formatdate
 from email import Encoders
 from xml.dom.minidom import parseString
-import wx.lib.scrolledpanel as scroll
-
-c = shelve.open('d_cache.dat')
-directory_cache_list = c.values()
+c = shelve.open('DDRM3A2.dat')
+ID = 'mail@gmail.com'
+tagselece = ID.find('@')
+tag = ID[:tagselece]
+c[ID] = {'Tag':tag,'mail':ID}
+c.close()
+c = shelve.open('c_cache.dat')
+directory_cache_list = c.keys()
 c.close()
 trimmer='[]'
 supported_regex = "\w+([-+.]\w+)*@(yahoo|gmail|hotmail|googlemail)\.com"
@@ -32,43 +36,91 @@ yahoo_regex ="\w+([-+.]\w+)*@yahoo.com"
 gmail_regex = "^[a-z0-9](\.?[a-z0-9]){5,}@g(oogle)?mail\.com$"
 regexion = "^.+\\@(\\[?)[a-zA-Z0-9\\-\\.]+\\.([a-zA-Z]{2,3}|[0-9]{1,3})(\\]?)$"
 attos = []        
-SEND_ATT,OPEN_PROMPT,SAVE_PROMT, CLOSE,DEF_ACC,CUST_ACC,RESET_ALL,MY_ACC,MAN_F,MAN_F_X,OPEN_ALL,ACC_X,CUST_X,HELP = 1,2,3,4,5,6,7,8,9,10,11,12,13,14
+SEND_ATT,OPEN_PROMPT,SAVE_PROMT, CLOSE,DEF_ACC,CUST_ACC,RESET_ALL,MY_ACC,MAN_F,MAN_F_X,OPEN_ALL,ACC_X,CUST_X,HELP,IMPORT,EXPORT,CREATE_CONTACT,CONTACT_LIST,CONTACT_LIST_X,EDIT_CONTACT_LIST = 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20
 
-class Man_at_directory(wx.Frame)
+class Man_at_contacts(wx.Frame):
 	def __init__(self,parent):
-		super(Man_at_directory,self).__init__(None,style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION ,size = (300,250), pos=(920,80))				
+		super(Man_at_contacts,self).__init__(None,style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION |wx.CLOSE_BOX,size = (350,400), pos=(300,300))				
 		self.parent = parent
-		self.DirectoryUI()
+		self.box_directory = {}
+		self.static_direc = {}
+		self.box_mail = {}
+		self.text = {}
+		self.mail_text = {}
+		self.list  = directory_cache_list
+		self.ContactsUI()
+		self.SetTitle('Drag Contact')
 		self.Show()
-	def DirectoryUI(self):
-		#CREATING THE DRAG
-#HIDE DIRECTORY
+	def ContactsUI(self):
+		
 		panel = wx.PyScrolledWindow(self,-1,style = wx.VSCROLL)
 		panel.SetScrollbars(0, 1, 0, 1)
 		panel.SetScrollRate( 1, 1 ) 
 		box = wx.BoxSizer(wx.VERTICAL)
-		box.Add((-1,115))#path
-		for directory_element in directory_cache_list:
-			directory_cut = directory_element[:22]+"..." if len(directory_element) > 25 else directory_element
+		bmp3 = wx.Image('img/contacts.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		panel.bitmap2 = wx.StaticBitmap(panel, -1, bmp3, (0, 0))
+		box.Add((-1,140))
+	#		panel.SetSizer(box)
+		core_list = shelve.open('DDRM3A2.dat')
+		core_keys = core_list.keys()
+		core_values = core_list.values()
+		if core_list:
+	
+			for key,value in core_list.iteritems():
 
-			self.box_directory = wx.BoxSizer(wx.HORIZONTAL)
-			self.static_direc = wx.StaticText(panel,label =directory_element )
-			box.Add(self.static_direc, flag = wx.RIGHT | wx.LEFT border = 5)
-			self.static_button = wx.Buttton(panel, style = wx.NO_BORDER, bitmap = bmp , size = (GetWidth()+5, GetHeight()+5) )
-			box.Add(self.static_button, flag = wx.ALIGN_RIGHT, border = 5)
-			self.static_button.Hide()
-			vbox.Add(self.box_directory, flag = wx.ALL | wx.ALIGN_CENTRE, border = 5)
-			vbox.Add((-1,10))
+				directory_cut = key[:22]+"..." if len(key) > 25 else key
+
+				self.boxer = wx.BoxSizer(wx.HORIZONTAL)
+				self.title = wx.StaticText(panel,label = value['Tag'] )
+				self.title.SetFont(self.parent.font3)
+				self.title.SetForegroundColour((117,113,113))
+				self.title.parameterVal = key
+				self.boxer.Add(self.title)
+				box.Add(self.boxer, flag = wx.ALIGN_LEFT| wx.LEFT, border = 25)
+
+
+				self.box_mail = wx.BoxSizer(wx.HORIZONTAL)
+				self.text = DragTxt(panel,self.parent, key)
+				
+				self.box_mail.Add(self.text)
+				box.Add(self.box_mail, flag = wx.ALIGN_LEFT|wx.LEFT, border = 25)
+ 				box.Add((-1,10))
+ 		else:
+ 			box.Add((-1,50))
+ 			self.boxer = wx.BoxSizer(wx.HORIZONTAL)
+			self.title = wx.StaticText(panel,label = 'Ctrl+H To Add Contacts' )
+			self.title.SetFont(self.parent.font3)
+			self.title.SetForegroundColour((117,113,113))
+			self.boxer.Add(self.title)
+			box.Add(self.boxer, flag = wx.ALIGN_CENTRE, border = 25)	
 		panel.SetSizer(box)
-
+		core_list.close()
 	def destroy_direc(self,direc):
 		#DESTROY DIREC
-	def create_direc(self,direc_c):
+		pass
+	def create_direc(self,direc):
 		#CREATE  DIREC	
-	def call(self):
-		#DIREC CALL	
+		pass
 	def Explode(self):
-			
+		self.Close()
+	def call(self):
+		return 
+class DragTxt(wx.StaticText):
+	def __init__(self, parent,grandfather, key):
+			wx.StaticText.__init__(self, parent, label=key)
+			self.key = str(key)
+			self.grandfather = grandfather
+			self.SetFont(self.grandfather.font2)
+			self.parameterVal = key
+			self.Bind(wx.EVT_LEFT_DOWN, self.drag_act)
+			self.Bind(wx.EVT_LEFT_DCLICK, self.append_to_Ctrl)
+	def drag_act(self, event):
+			ds = wx.DropSource(self.GetParent())
+			d = wx.PyTextDataObject(self.key)
+			ds.SetData(d)
+			ds.DoDragDrop(True)
+	def append_to_Ctrl(self,evt):
+		self.grandfather.append_to_Ctrl(self.key)		
 class Gauger(wx.Frame):
 	def __init__(self,grandfather,task_range):
 		super(Gauger, self).__init__(None,style=wx.CAPTION)
@@ -155,7 +207,7 @@ class RaiseAuth(wx.Frame):
 
 			self.Bind(wx.EVT_BUTTON, self.close, opt_cancel)
 	def it_works(self,e):
-#Authentication	
+	#Authentication	
 		if on_con():	
 			self.get_user = self.user_camp.GetValue()
 			self.get_pass = self.password_camp.GetValue()
@@ -213,6 +265,17 @@ class DropTarget(wx.FileDropTarget):
 		self.parent.SetInsertionPointEnd()
 		for filepath in filenames:
 			self.parent.updateFiles(filepath)
+class MyTextDropTarget(wx.TextDropTarget):
+	def __init__(self, parent):
+		wx.TextDropTarget.__init__(self)
+		self.parent = parent
+	def OnDropText(self, x, y, text):
+		to_eval = self.parent.destiny_camp.GetValue()
+		if to_eval:
+			self.parent.destiny_camp.WriteText(", "+text)
+		else:
+			self.parent.destiny_camp.WriteText(text)				
+
 class RaisePopup(wx.Frame):
 	def __init__(self,title,text):
 		super(RaisePopup, self).__init__(None,style=wx.CAPTION,size=(300,200))
@@ -279,7 +342,7 @@ class Man_at_files(wx.Frame):
 		self.dest_text = {}
 		self.FrameUI()
 		self.SetTitle('File Manager')
-		self.SetSize((350,600))
+		self.SetSize((350,400))
 		self.Show()
 		
 	def FrameUI(self):
@@ -291,22 +354,30 @@ class Man_at_files(wx.Frame):
 		bmp3 = wx.Image('img/file_man.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 		panel.bitmap2 = wx.StaticBitmap(panel, -1, bmp3, (0, 0))
 		box.Add((-1,130))
-		for path in attos:
-			asc_id =self.id_generator()
-			self.in_box[path] = wx.BoxSizer(wx.HORIZONTAL)
-			label = '...'+path[-27:]
-			self.dest_text[path] = wx.StaticText(panel,label =label)
-			self.dest_text[path].SetFont(self.parent.font)
-			self.in_box[path].Add(self.dest_text[path])	
-			self.dict_button[path] = wx.BitmapButton(panel, id=wx.ID_ANY, style=wx.NO_BORDER, bitmap=bmp,size=(bmp.GetWidth()+5, bmp.GetHeight()+5))
-			self.dict_button[path].parameterVal = path
-			self.in_box[path].Add(self.dict_button[path],flag = wx.ALIGN_RIGHT,border =5)
-			box.Add(self.in_box[path],flag = wx.RIGHT|wx.LEFT|wx.ALIGN_RIGHT, border = 20)
-			box.Add((-1,10))
-			self.Bind(wx.EVT_BUTTON, self.destroy_file_path,self.dict_button[path])
-		panel.SetSizer(box)	
-	def id_generator(self,size=6, chars=string.ascii_uppercase + string.digits):
-		return ''.join(random.choice(chars) for x in range(size))	
+		if attos :
+			for path in attos:
+				self.in_box[path] = wx.BoxSizer(wx.HORIZONTAL)
+				label = '...'+path[-27:]
+				self.dest_text[path] = wx.StaticText(panel,label =label)
+				self.dest_text[path].SetFont(self.parent.font)
+				self.in_box[path].Add(self.dest_text[path])	
+
+				self.dict_button[path] = wx.BitmapButton(panel, id=wx.ID_ANY, style=wx.NO_BORDER, bitmap=bmp,size=(bmp.GetWidth()+5, bmp.GetHeight()+5))
+				self.dict_button[path].parameterVal = path
+				
+				self.in_box[path].Add(self.dict_button[path],flag = wx.ALIGN_RIGHT,border =5)
+				box.Add(self.in_box[path],flag = wx.RIGHT|wx.LEFT|wx.ALIGN_RIGHT, border = 20)
+				box.Add((-1,10))
+				self.Bind(wx.EVT_BUTTON, self.destroy_file_path,self.dict_button[path])
+		else:
+			box.Add((-1,50))
+ 			self.boxer = wx.BoxSizer(wx.HORIZONTAL)
+			self.title = wx.StaticText(panel,label = 'Drag your files or Ctrl+T' )
+			self.title.SetFont(self.parent.font3)
+			self.title.SetForegroundColour((117,113,113))
+			self.boxer.Add(self.title)
+			box.Add(self.boxer, flag = wx.ALIGN_CENTRE, border = 25)			
+		panel.SetSizer(box)		
 	def destroy_file_path(self,e):
 		button = e.GetEventObject()
 		idi = button.parameterVal
@@ -373,7 +444,7 @@ class Yubin(wx.Frame):
 		super(Yubin, self).__init__(None,id= -1, title = title, style  = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION|wx.CLOSE_BOX, size= (500,570))
 		self.count = 0
 		self.GeneralUI()
-#		self.Aproveaccount()
+	#		self.Aproveaccount()
 		self.Centre()
 
 		self.Aproveaccount()
@@ -382,6 +453,8 @@ class Yubin(wx.Frame):
 		#menu
 		self.font = wx.Font(15, wx.MODERN, wx.NORMAL, wx.BOLD)
 		self.font1 = wx.Font(15, wx.MODERN, wx.NORMAL, wx.NORMAL)
+		self.font2 = wx.Font(15, wx.MODERN, wx.NORMAL, wx.BOLD)
+		self.font3 = wx.Font(20, wx.MODERN, wx.NORMAL, wx.BOLD)
 		menubar = wx.MenuBar()
 		filemenu = wx.Menu()
 		send_att = wx.MenuItem(filemenu,SEND_ATT, '&Send Attachment \tCtrl+T')
@@ -389,10 +462,14 @@ class Yubin(wx.Frame):
 		save_prompt = wx.MenuItem(filemenu, SAVE_PROMT, '&Save Draft\tCtrl+S')
 		open_all_opt = wx.MenuItem(filemenu,OPEN_ALL,'&Open All\tCtrl+E')
 		close_opt = wx.MenuItem(filemenu, CLOSE, '&Close\tCtrl+Q')
+		import_opt = wx.MenuItem(filemenu, IMPORT, '&Import Contacts\tCtrl+J')
+		export_opt = wx.MenuItem(filemenu, EXPORT, '&Export Contacts\tCtrl+K')
 		filemenu.AppendItem(send_att)
 		filemenu.AppendItem(save_prompt)
 		filemenu.AppendItem(open_prompt)
 		filemenu.AppendSeparator()
+		filemenu.AppendItem(import_opt)
+		filemenu.AppendItem(export_opt)
 		filemenu.AppendItem(open_all_opt)
 		filemenu.AppendItem(close_opt)
 
@@ -400,20 +477,29 @@ class Yubin(wx.Frame):
 		cust_acc = wx.MenuItem(editmenu, CUST_ACC, '&Change Account\tCtrl+A')
 		reset_all = wx.MenuItem(editmenu, RESET_ALL, '&Reset \tCtrl+R')
 		change_account_x = wx.MenuItem(editmenu,CUST_X,'&Close Account Change Box\tAlt+A')
+		create_contact = wx.MenuItem(editmenu, CREATE_CONTACT, '&New Contact\tCtrl+H')
+		edit_contact_list = wx.MenuItem(editmenu,EDIT_CONTACT_LIST,'&Edit Contact List\tCtrl+P')
 		editmenu.AppendItem(cust_acc)
 		editmenu.AppendItem(reset_all)
 		editmenu.AppendItem(change_account_x)
+		editmenu.AppendSeparator()
+		editmenu.AppendItem(create_contact)
+		editmenu.AppendItem(edit_contact_list)
 
 		viewmenu = wx.Menu()
 		manage_files = wx.MenuItem(viewmenu,MAN_F,'&Manage Files\tCtrl+F')
 		my_acc = wx.MenuItem(viewmenu,MY_ACC,'&My Account\tCtrl+I')
 		manage_files_x = wx.MenuItem(viewmenu,MAN_F_X, '&Close the Manager\tAlt+F')
 		account_data_x = wx.MenuItem(viewmenu,ACC_X,'&Close The Info Box\tAlt+I')
+		contact_list = wx.MenuItem(viewmenu, CONTACT_LIST, '&Contact List\tCtrl+L')
+		contact_list_x = wx.MenuItem(viewmenu, CONTACT_LIST_X,'&Hide Contact List\tAlt+L')
 		viewmenu.AppendItem(manage_files)
 		viewmenu.AppendItem(my_acc)
+		viewmenu.AppendItem(contact_list)
 		viewmenu.AppendSeparator()
 		viewmenu.AppendItem(manage_files_x)
 		viewmenu.AppendItem(account_data_x)
+		viewmenu.AppendItem(contact_list_x)
 
 		helpmenu = wx.Menu()
 		help_opt = wx.MenuItem(helpmenu,HELP,'&Help and Documentation\tCtrl+H')
@@ -437,8 +523,10 @@ class Yubin(wx.Frame):
 		destiny_text  = wx.StaticText(panel, label = "To :")
 		destiny_text.SetFont(self.font)
 		destiny_box.Add(destiny_text, flag = wx.RIGHT, border = 5)
-		self.destiny_camp =  wx.ComboBox(panel, -1, choices = directory_cache_list)
-#
+		text_drop_target = MyTextDropTarget(self)
+		self.destiny_camp =  wx.TextCtrl(panel)
+		self.destiny_camp.SetDropTarget(text_drop_target)
+
 		destiny_box.Add(self.destiny_camp, proportion = 1)
 		box.Add(destiny_box, flag = wx.EXPAND | wx.RIGHT | wx.LEFT| wx.TOP ,border = 23)
 		box.Add((-1,10))
@@ -496,12 +584,19 @@ class Yubin(wx.Frame):
 		self.Bind(wx.EVT_MENU, self.account_data_close, account_data_x)
 		self.Bind(wx.EVT_MENU, self.manageFiles_close, manage_files_x)
 		self.Bind(wx.EVT_MENU, self.open_all , open_all_opt)
+		# new options
+		self.Bind(wx.EVT_MENU, self.on_import, import_opt)
+		self.Bind(wx.EVT_MENU, self.on_export, export_opt)
+		self.Bind(wx.EVT_MENU, self.on_create_contact,create_contact)
+		self.Bind(wx.EVT_MENU, self.on_edit_contact, edit_contact_list)
+		self.Bind(wx.EVT_MENU, self.contact_list_show, contact_list)
+		self.Bind(wx.EVT_MENU, self.contact_list_hide,contact_list_x)
+		#.......
 		self.Bind(wx.EVT_CLOSE,self.kill_all)
 		self.Bind(wx.EVT_BUTTON, self.send_mail_instant , send_button)
-		self.Bind(wx.EVT_TEXT,self.select_mails ,self.destiny_camp)
 		self.Bind(wx.EVT_MENU,self.popHelp, help_opt)
 		#Accelerators
-		accel_tbl = wx.AcceleratorTable([(wx.ACCEL_ALT,  ord('A'), change_account_x.GetId() ),(wx.ACCEL_ALT,  ord('I'), account_data_x.GetId() ),(wx.ACCEL_CTRL,  ord('T'), send_att.GetId() ),(wx.ACCEL_CTRL,  ord('E'), open_all_opt.GetId() ),(wx.ACCEL_ALT,  ord('F'), manage_files_x.GetId() ),(wx.ACCEL_CTRL,  ord('F'), manage_files.GetId() ),(wx.ACCEL_CTRL,  ord('S'), save_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('O'), open_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('Q'), close_opt.GetId() ),(wx.ACCEL_CTRL,  ord('A'), cust_acc.GetId() ),(wx.ACCEL_CTRL,  ord('R'), reset_all.GetId() ),(wx.ACCEL_CTRL,  ord('I'), my_acc.GetId() )])
+		accel_tbl = wx.AcceleratorTable([(wx.ACCEL_ALT,  ord('A'), change_account_x.GetId() ),(wx.ACCEL_ALT,  ord('I'), account_data_x.GetId() ),(wx.ACCEL_CTRL,  ord('T'), send_att.GetId() ),(wx.ACCEL_CTRL,  ord('E'), open_all_opt.GetId() ),(wx.ACCEL_ALT,  ord('F'), manage_files_x.GetId() ),(wx.ACCEL_CTRL,  ord('F'), manage_files.GetId() ),(wx.ACCEL_CTRL,  ord('S'), save_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('O'), open_prompt.GetId() ),(wx.ACCEL_CTRL,  ord('Q'), close_opt.GetId() ),(wx.ACCEL_CTRL,  ord('A'), cust_acc.GetId() ),(wx.ACCEL_CTRL,  ord('R'), reset_all.GetId() ),(wx.ACCEL_CTRL,  ord('I'), my_acc.GetId() ),(wx.ACCEL_CTRL,  ord('J'), import_opt.GetId() ),(wx.ACCEL_CTRL,  ord('K'), export_opt.GetId() ),(wx.ACCEL_CTRL,  ord('H'), create_contact.GetId() ),(wx.ACCEL_CTRL,  ord('P'), edit_contact_list.GetId() ),(wx.ACCEL_CTRL,  ord('L'), contact_list.GetId() ),(wx.ACCEL_ALT,  ord('L'), contact_list_x.GetId() )])
 		self.SetAcceleratorTable(accel_tbl)
 
 
@@ -634,21 +729,11 @@ class Yubin(wx.Frame):
 			self.info_window.new_id(new_user)
 		except AttributeError,e :
 			pass		
-	def select_mails(self,e):
-			self.destiny_camp.Clear()
-			self.destiny_camp.SetInsertionPointEnd()
-			destiny_get = self.destiny_camp.GetValue()
-			for element in directory_cache_list:
-				fol = re.match(destiny_get,element)
-				if fol :
-					self.destiny_camp.Append(element)
 	def manageFiles(self,e):
 		try:
 			self.man_f_window.call()
 		except AttributeError, e:
 			self.man_f_window = Man_at_files(self)
-		else:
-			pass
 
 	def manageFiles_close(self,e):
 		try:
@@ -681,7 +766,7 @@ class Yubin(wx.Frame):
 				a_mail.create_thread()
 
 				#Cache for name directory
-				c = shelve.open('d_cache.dat')
+				c = shelve.open('c_cache.dat')
 				
 				c[self.destiny_get] = self.destiny_get
 				c.close()
@@ -699,6 +784,35 @@ class Yubin(wx.Frame):
 		else:
 			self.Show()
 			self.open_all(True)
+	def on_import(self,e):
+		pass
+	def on_export(self,e):
+		pass
+	def on_create_contact(self,e):
+		pass
+	def on_edit_contact(self,e):
+		pass			
+	def contact_list_show(self,e):
+		try:
+			self.contact_window.call()
+		except AttributeError, e:
+			self.contact_window = Man_at_contacts(self)
+	def contact_list_hide(self,e):
+		try:
+			self.contact_window.call()
+		except AttributeError,e :
+			pass
+		else:
+			self.contact_window.Explode()
+			del self.contact_window	
+	def append_to_Ctrl(self,to_append):
+
+		to_eval = self.destiny_camp.GetValue()
+
+		if to_eval:
+			self.destiny_camp.WriteText(", "+to_append)
+		else:
+			self.destiny_camp.WriteText(to_append)
 	def open_all(self,e):
 		try:
 			self.info_window.call()
@@ -712,6 +826,10 @@ class Yubin(wx.Frame):
 			self.man_f_window.call()
 		except AttributeError, e:
 			self.manageFiles(True)	
+		try:
+			self.contact_window.call()
+		except AttributeError, e:
+			self.contact_list_show(True)
 	def kill_all(self,e):
 		try:
 			self.info_window.call()
@@ -730,7 +848,13 @@ class Yubin(wx.Frame):
 		except AttributeError, e:
 			pass	
 		else:
-			self.man_f_window.Explode()					
+			self.man_f_window.Explode()	
+		try:
+			self.contact_window.call()
+		except AttributeError,e :
+			pass
+		else:
+			self.contact_window.Explode()						
 		self.Destroy()
 
 class Mail(object):
@@ -782,9 +906,9 @@ class Mail(object):
 		elif self.yeah_bool == False:
 			RaisePopup('File Load Too Big','Over Server Capacity')	
 	def assign_MIME(self):	
-#		self.recieverstr = self.recieverstr.split(',')
-#		progress_frame = Gauger(self.parent,(len(self.file_attachments)+3)*len(self.recieverstr))
-#		for self.reciever in self.recieverstr:
+	#		self.recieverstr = self.recieverstr.split(',')
+	#		progress_frame = Gauger(self.parent,(len(self.file_attachments)+3)*len(self.recieverstr))
+	#		for self.reciever in self.recieverstr:
 		self.reciever =self.reciever.strip()
 		self.msg = MIMEMultipart('alternative')
 		self.msg['To'] = self.reciever
@@ -792,20 +916,20 @@ class Mail(object):
 		self.msg['Date'] = formatdate(localtime=True)
 		self.msg['Subject'] = self.subject
 		self.msg.attach(MIMEText(self.body))
-#			self.progress_frame.add_to_gauge()
+	#			self.progress_frame.add_to_gauge()
 	def attach(self,file_attachment):
-#		if self.file_attachments:
-#		for file_att in self.file_attachments:
+	#		if self.file_attachments:
+	#		for file_att in self.file_attachments:
 			try:
 				file_parser = MIMEBase('application', "octet-stream") 
 				file_parser.set_payload( open(file_attachment,"rb").read() )
 				Encoders.encode_base64(file_parser)
 				file_parser.add_header('Content-Disposition', 'attachment; filename="%s"' % os.path.basename(file_attachment))
 				self.msg.attach(file_parser)
-#					self.progress_frame.add_to_gauge()
+	#					self.progress_frame.add_to_gauge()
 			except IOError:
 				self.yeah_bool= False
-#				RaisePopup('Where is the file?','File unavailable')
+	#				RaisePopup('Where is the file?','File unavailable')
 
 	def smtp_create(self):					
 		gmail_serv =re.match(gmail_regex,self.account)
@@ -823,25 +947,25 @@ class Mail(object):
 		self.smtpserver.starttls()
 		self.smtpserver.ehlo()
 		self.smtpserver.login(self.accountpriv, self.getpwd())
-#
-#			self.progress_frame.add_to_gauge()
+	#
+	#			self.progress_frame.add_to_gauge()
 	def send(self):
 		try:
 			pass
 			self.smtpserver.sendmail(self.account,self.reciever, self.msg.as_string())
 		except smtplib.SMTPSenderRefused :	
-#				self.progress_frame.Explode()
+	#				self.progress_frame.Explode()
 			self.yeah_bool= False
-#				RaisePopup('File Load Too Big','Over Server Capacity')
+	#				RaisePopup('File Load Too Big','Over Server Capacity')
 			self.parent.statbar.SetStatusText("Mail Error :(" )
 		else:
-#				self.progress_frame.add_to_gauge()
-#				self.progress_frame.Explode()
+	#				self.progress_frame.add_to_gauge()
+	#				self.progress_frame.Explode()
 			self.parent.statbar.SetStatusText(str("Success at sending mail to " + self.reciever))
 
 		self.smtpserver.close()
-#			if self.yeah_bool:
-#				self.success = SuccessPopup()
+	#			if self.yeah_bool:
+	#				self.success = SuccessPopup()
 			
 	def	getpwd(self):
 		return self.__password
