@@ -20,12 +20,7 @@ from email.MIMEText import MIMEText
 from email.Utils import COMMASPACE, formatdate
 from email import Encoders
 from xml.dom.minidom import parseString
-#c = shelve.open('DDRM3A2.dat')
-#ID = 'mail@gmail.com'
-#tagselece = ID.find('@')
-#tag = ID[:tagselece]
-#c[ID] = {'Tag':tag,'mail':ID}
-#c.close()s
+import  wx.lib.scrolledpanel as scrolled
 trimmer='[]'
 supported_regex = "\w+([-+.]\w+)*@(yahoo|gmail|hotmail|googlemail)\.com"
 hotmail_regex = "\w+([-+.]\w+)*@hotmail.com"
@@ -39,16 +34,20 @@ class Man_at_contacts(wx.Frame):
 	def __init__(self,parent):
 		super(Man_at_contacts,self).__init__(None,style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION |wx.CLOSE_BOX,size = (350,400), pos=(300,300))				
 		self.parent = parent
-		self.box_directory = {}
-		self.static_direc = {}
 		self.box_mail = {}
 		self.text = {}
+		self.title = {}
 		self.mail_text = {}
+		self.control_button = {}
+		self.control_box = {}
+		self.description_box = {}
+		self.general_box = {}
+		self.boxer = {}
 		self.ContactsUI()
 		self.SetTitle('Drag Contact')
 		self.Show()
 	def ContactsUI(self):
-		bmp8 = wx.Bitmap("img/close.png", wx.BITMAP_TYPE_ANY)
+		bmp9 = wx.Bitmap("img/close.png", wx.BITMAP_TYPE_ANY)
 		self.panel = wx.PyScrolledWindow(self,-1,style = wx.VSCROLL)
 		self.panel.SetScrollbars(0, 1, 0, 1)
 		self.panel.SetScrollRate( 1, 1 ) 
@@ -56,7 +55,6 @@ class Man_at_contacts(wx.Frame):
 		bmp3 = wx.Image('img/contacts.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 		self.panel.bitmap2 = wx.StaticBitmap(self.panel, -1, bmp3, (0, 0))
 		self.box.Add((-1,140))
-	#		panel.SetSizer(box)
 		core_list = shelve.open('DDRM3A2.dat')
 		core_keys = core_list.keys()
 		core_values = core_list.values()
@@ -64,26 +62,7 @@ class Man_at_contacts(wx.Frame):
 	
 			for key,value in core_list.iteritems():
 
-				directory_cut = key[:22]+"..." if len(key) > 25 else key
-
-				self.boxer = wx.BoxSizer(wx.HORIZONTAL)
-				self.title = wx.StaticText(self.panel,label = value['Tag'] )
-				self.title.SetFont(self.parent.font3)
-				self.title.SetForegroundColour((117,113,113))
-				self.title.parameterVal = key
-				self.boxer.Add(self.title)
-				self.box.Add(self.boxer, flag = wx.ALIGN_LEFT| wx.LEFT, border = 25)
-
-				self.button = wx.BitmapButton(self.panel, id=wx.ID_ANY, style=wx.NO_BORDER, bitmap=bmp8,size=(bmp8.GetWidth()+5, bmp8.GetHeight()+5))
-
-				self.box_mail = wx.BoxSizer(wx.HORIZONTAL)
-				self.text = DragTxt(self.panel,self.parent, key)
-				
-				self.box_mail.Add(self.text)
-				self.box_mail.Add(self.button, flag = wx.ALIGN_RIGHT, border =25)
-	#			self.button.Hide()
-				self.box.Add(self.box_mail, flag = wx.ALIGN_LEFT|wx.LEFT, border = 25)
- 				self.box.Add((-1,10))
+				pass
  		else:
  			self.box.Add((-1,50))
  			self.boxer = wx.BoxSizer(wx.HORIZONTAL)
@@ -94,74 +73,67 @@ class Man_at_contacts(wx.Frame):
 			self.box.Add(self.boxer, flag = wx.ALIGN_CENTRE, border = 25)	
 		self.panel.SetSizer(self.box)
 		core_list.close()	
+	def destroy_contact(self,key):
+		self.box_mail[key].Remove()
+		self.boxer[key].Remove()
+		self.text[key].Hide()
+		self.mail_text[key].Hide()
+		self.control_button[key].Hide()
+		self.control_box[key].Remove()
+		self.description_box[key].Remove()
+
+		c = shelve.open('DDRM3A2.dat')
+		del c[key]
+		c.close()
+
+		self.parent.statbar.SetStatusText(key + ' Removed!')
+		
+	def on_know(self,e):
+		x = e.GetEventObject()
+		y = x.parameterVal 
+
+		self.PopupMenu(Control_button_popup_menu(self,self.parent,y), e.GetPosition())
 	def Explode(self):
-		self.Close()
+		self.Close()	
 	def call(self):
 		return 
-class Contact_Engineer(wx.Frame):
+class Control_button_popup_menu(wx.Menu):
+			def __init__(self, parent,grandfather,key):
+				super(Control_button_popup_menu, self).__init__()
+				self.parent = parent
+				self.grandfather = grandfather
+				self.key = key
+
+				edit_opt = wx.MenuItem(self, wx.NewId(),'Edit')
+				self.AppendItem(edit_opt)
+				self.Bind(wx.EVT_MENU, self.on_edit, edit_opt)
+
+				destroy_opt = wx.MenuItem(self, wx.NewId(),'Remove')
+				self.AppendItem(destroy_opt)
+				self.Bind(wx.EVT_MENU, self.on_destroy , destroy_opt)
+			def on_edit(self, e):
+#				self.grandfather.launch_editor()
+				pass
+			def on_destroy(self,e):
+				self.parent.destroy_contact(self.key)								
+class Trash_Engine(wx.Frame):
 	def __init__(self,parent):
 		super(Contact_Engineer,self).__init__(None,style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION |wx.CLOSE_BOX,size = (350,400), pos=(300,300))				
 		self.parent = parent
-		self.box_directory = {}
-		self.static_direc = {}
-		self.box_mail = {}
-		self.text = {}
-		self.mail_text = {}
-		self.ContactsUI()
-		self.SetTitle('Edit Contacts')
+		self.EngineUI()
+		self.SetTitle('Drag to the Trash!')
 		self.Show()
-	def ContactsUI(self):
-		
-		self.panel = wx.PyScrolledWindow(self,-1,style = wx.VSCROLL)
-		self.panel.SetScrollbars(0, 1, 0, 1)
-		self.panel.SetScrollRate( 1, 1 ) 
-		self.box = wx.BoxSizer(wx.VERTICAL)
-		bmp3 = wx.Image('img/contact_engineer.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-		self.panel.bitmap2 = wx.StaticBitmap(self.panel, -1, bmp3, (0, 0))
-		self.box.Add((-1,140))
-	#		panel.SetSizer(box)
-		core_list = shelve.open('DDRM3A2.dat')
-		core_keys = core_list.keys()
-		core_values = core_list.values()
-		if core_list:
-	
-			for key,value in core_list.iteritems():
-
-				directory_cut = key[:22]+"..." if len(key) > 25 else key
-
-				self.boxer = wx.BoxSizer(wx.HORIZONTAL)
-				self.title = wx.StaticText(self.panel,value = value['Tag'] )
-				self.title.SetFont(self.parent.font3)
-				self.title.SetForegroundColour((117,113,113))
-				self.title.parameterVal = key
-				self.boxer.Add(self.title)
-				self.box.Add(self.boxer, flag = wx.ALIGN_LEFT| wx.LEFT, border = 25)
-
-
-				self.box_mail = wx.BoxSizer(wx.HORIZONTAL)
-				self.text = DragTxt(self.panel,self.parent, key)
-				
-				self.box_mail.Add(self.text)
-				self.box.Add(self.box_mail, flag = wx.ALIGN_LEFT|wx.LEFT, border = 25)
- 				self.box.Add((-1,10))
- 		else:
- 			self.box.Add((-1,50))
- 			self.boxer = wx.BoxSizer(wx.HORIZONTAL)
-			self.title = wx.StaticText(self.panel,label = 'Ctrl+D To Add Contacts' )
-			self.title.SetFont(self.parent.font3)
-			self.title.SetForegroundColour((117,113,113))
-			self.boxer.Add(self.title)
-			self.box.Add(self.boxer, flag = wx.ALIGN_CENTRE, border = 25)	
-		self.panel.SetSizer(self.box)
-		core_list.close()	
+	def EngineUI(self):
+			pass	
 	def Explode(self):
 		self.Close()
 	def call(self):
 		return 	
 class DragTxt(wx.StaticText):
-	def __init__(self, parent,grandfather, key):
-			wx.StaticText.__init__(self, parent, label=key)
+	def __init__(self, parent ,panel_parent,grandfather, key):
+			wx.StaticText.__init__(self, panel_parent, label=key)
 			self.key = str(key)
+			self.parent = parent
 			self.grandfather = grandfather
 			self.SetFont(self.grandfather.font2)
 			self.parameterVal = key
@@ -173,7 +145,8 @@ class DragTxt(wx.StaticText):
 			ds.SetData(d)
 			ds.DoDragDrop(True)
 	def append_to_Ctrl(self,evt):
-		self.grandfather.append_to_Ctrl(self.key)	
+		self.grandfather.append_to_Ctrl(self.key)
+		#self.parent.show_ctrl(self.key)
 class Add_Contact_PopUp(wx.Frame):
 	def __init__(self,parent):
 		super(Add_Contact_PopUp, self).__init__(None,style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX ,size = (300,200))
@@ -447,43 +420,48 @@ class Man_at_files(wx.Frame):
 		self.in_box = {}
 		self.dest_text = {}
 		self.FrameUI()
+
 		self.SetTitle('File Manager')
 		self.SetSize((350,400))
 		self.Show()
 		
 	def FrameUI(self):
-		bmp = wx.Bitmap("img/close.png", wx.BITMAP_TYPE_ANY)
-		panel = wx.PyScrolledWindow(self,-1,style = wx.VSCROLL)
-		panel.SetScrollbars(0, 1, 0, 1)
-		panel.SetScrollRate( 1, 1 ) 
-		box = wx.BoxSizer(wx.VERTICAL)
+		self.bmp = wx.Bitmap("img/close.png", wx.BITMAP_TYPE_ANY)
+		self.panel = wx.ScrolledWindow(self,-1,style = wx.VSCROLL)
+		self.panel.SetScrollbars(0, 1, 0, 1)
+		self.panel.SetScrollRate( 1, 1 ) 
+		self.box = wx.BoxSizer(wx.VERTICAL)
 		bmp3 = wx.Image('img/file_man.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-		panel.bitmap2 = wx.StaticBitmap(panel, -1, bmp3, (0, 0))
-		box.Add((-1,130))
+		self.panel.bitmap2 = wx.StaticBitmap(self.panel, -1, bmp3, (0, 0))
+		self.Boot()
+	def Boot(self):	
+		self.box.Add((-1,130))
 		if attos :
 			for path in attos:
 				self.in_box[path] = wx.BoxSizer(wx.HORIZONTAL)
 				label = '...'+path[-27:]
-				self.dest_text[path] = wx.StaticText(panel,label =label)
+				self.dest_text[path] = wx.StaticText(self.panel,label =label)
 				self.dest_text[path].SetFont(self.parent.font)
 				self.in_box[path].Add(self.dest_text[path])	
 
-				self.dict_button[path] = wx.BitmapButton(panel, id=wx.ID_ANY, style=wx.NO_BORDER, bitmap=bmp,size=(bmp.GetWidth()+5, bmp.GetHeight()+5))
+				self.dict_button[path] = wx.BitmapButton(self.panel, id=wx.ID_ANY, style=wx.NO_BORDER, bitmap=self.bmp,size=(self.bmp.GetWidth()+5, self.bmp.GetHeight()+5))
 				self.dict_button[path].parameterVal = path
 				
 				self.in_box[path].Add(self.dict_button[path],flag = wx.ALIGN_RIGHT,border =5)
-				box.Add(self.in_box[path],flag = wx.RIGHT|wx.LEFT|wx.ALIGN_RIGHT, border = 20)
-				box.Add((-1,10))
+				self.box.Add(self.in_box[path],flag = wx.RIGHT|wx.LEFT|wx.ALIGN_RIGHT, border = 20)
+				self.box.Add((-1,10))
 				self.Bind(wx.EVT_BUTTON, self.destroy_file_path,self.dict_button[path])
 		else:
-			box.Add((-1,50))
+			self.box.Add((-1,50))
  			self.boxer = wx.BoxSizer(wx.HORIZONTAL)
-			self.title = wx.StaticText(panel,label = 'Drag your files or Ctrl+T' )
+			self.title = wx.StaticText(self.panel,label = 'Drag your files or Ctrl+T' )
 			self.title.SetFont(self.parent.font3)
 			self.title.SetForegroundColour((117,113,113))
 			self.boxer.Add(self.title)
-			box.Add(self.boxer, flag = wx.ALIGN_CENTRE, border = 25)			
-		panel.SetSizer(box)		
+			self.box.Add(self.boxer, flag = wx.ALIGN_CENTRE, border = 25)				
+		self.panel.SetSizer(self.box)
+		self.panel.FitInside()
+		
 	def destroy_file_path(self,e):
 		button = e.GetEventObject()
 		idi = button.parameterVal
@@ -493,8 +471,15 @@ class Man_at_files(wx.Frame):
 			self.dest_text[idi].Hide()
 			self.dict_button[idi].Hide()
 			self.in_box[idi].Remove(True)
+			self.box.Layout()
 
 			self.parent.clear_and_update()
+			self.update()
+	def update(self):
+		self.box.Clear(True)
+		self.box.Layout()
+		self.Boot()	
+		self.box.Layout()
 	def call(self):
 		return 		
 	def Explode(self):
@@ -809,9 +794,10 @@ class Yubin(wx.Frame):
 			except AttributeError,e:	
 				pass
 			else:	
-				self.man_f_window.Explode()
-				del self.man_f_window
-				self.manageFiles(True)
+				#self.man_f_window.Explode()
+				##del self.man_f_window
+				#self.manageFiles(True)
+				self.man_f_window.update()
 	def account_data(self,e):
 		
 		try:
