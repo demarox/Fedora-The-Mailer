@@ -48,7 +48,7 @@ class Man_at_contacts(wx.Frame):
 		self.SetTitle('Drag Contact')
 		self.Show()
 	def ContactsUI(self):
-		
+		bmp8 = wx.Bitmap("img/close.png", wx.BITMAP_TYPE_ANY)
 		self.panel = wx.PyScrolledWindow(self,-1,style = wx.VSCROLL)
 		self.panel.SetScrollbars(0, 1, 0, 1)
 		self.panel.SetScrollRate( 1, 1 ) 
@@ -74,11 +74,14 @@ class Man_at_contacts(wx.Frame):
 				self.boxer.Add(self.title)
 				self.box.Add(self.boxer, flag = wx.ALIGN_LEFT| wx.LEFT, border = 25)
 
+				self.button = wx.BitmapButton(self.panel, id=wx.ID_ANY, style=wx.NO_BORDER, bitmap=bmp8,size=(bmp8.GetWidth()+5, bmp8.GetHeight()+5))
 
 				self.box_mail = wx.BoxSizer(wx.HORIZONTAL)
 				self.text = DragTxt(self.panel,self.parent, key)
 				
 				self.box_mail.Add(self.text)
+				self.box_mail.Add(self.button, flag = wx.ALIGN_RIGHT, border =25)
+	#			self.button.Hide()
 				self.box.Add(self.box_mail, flag = wx.ALIGN_LEFT|wx.LEFT, border = 25)
  				self.box.Add((-1,10))
  		else:
