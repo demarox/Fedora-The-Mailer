@@ -12,6 +12,7 @@ import string
 import random
 import time
 import threading
+import collections
 import urllib2
 from threading import Thread
 from email.MIMEMultipart import MIMEMultipart
@@ -53,13 +54,13 @@ class Man_at_contacts(wx.Frame):
 		self.SetTitle('Drag Contact')
 		self.Show()
 	def ContactsUI(self):
-		bmp9 = wx.Bitmap("img/close.png", wx.BITMAP_TYPE_ANY)
-		self.bmp10 = wx.Bitmap("img/edit_option.png", wx.BITMAP_TYPE_ANY)
+		bmp9 = wx.Bitmap("img/res_icon/close.png", wx.BITMAP_TYPE_ANY)
+		self.bmp10 = wx.Bitmap("img/res_icon/edit_option.png", wx.BITMAP_TYPE_ANY)
 		self.panel = wx.ScrolledWindow(self,-1,style = wx.VSCROLL)
 		self.panel.SetScrollbars(0, 1, 0, 1)
 		self.panel.SetScrollRate( 1, 1 ) 
 		self.box = wx.BoxSizer(wx.VERTICAL)
-		bmp3 = wx.Image('img/contacts.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		bmp3 = wx.Image('img/res/contacts.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 		self.panel.bitmap2 = wx.StaticBitmap(self.panel, -1, bmp3, (0, 0))
 		self.Boot()	
 
@@ -69,8 +70,8 @@ class Man_at_contacts(wx.Frame):
 		core_keys = core_list.keys()
 		core_values = core_list.values()
 		if core_list:
-	
-			for key,value in core_list.iteritems():
+			core_ordered_list = collections.OrderedDict(sorted(core_list.items(), key=lambda t: t[1]))
+			for key,value in core_ordered_list.iteritems():
 				self.boxy_box = wx.BoxSizer(wx.HORIZONTAL)
 				self.edit_button[key] = wx.BitmapButton(self.panel, id=wx.ID_ANY, style=wx.NO_BORDER, bitmap=self.bmp10,size=(self.bmp10.GetWidth()+25, self.bmp10.GetHeight()+8))
 				self.edit_button[key].parameterVal = key
@@ -172,8 +173,8 @@ class Edit_Contact_PopUp(wx.Frame):
 		self.Show()
 	def Simple_UI(self):
 		pan = wx.Panel(self)
-		bmp7 = wx.Bitmap("img/check_icon.png", wx.BITMAP_TYPE_ANY)
-		bmp6 = wx.Image('img/add_contact.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		bmp7 = wx.Bitmap("img/res_icon/check_icon.png", wx.BITMAP_TYPE_ANY)
+		bmp6 = wx.Image('img/res/add_contact.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 		pan.bitmap6 = wx.StaticBitmap(pan, -1, bmp6, (0, 0))
 		vbox = wx.BoxSizer(wx.VERTICAL)	
 		font = wx.Font(15, wx.MODERN, wx.NORMAL, wx.BOLD)
@@ -211,13 +212,17 @@ class Edit_Contact_PopUp(wx.Frame):
 		fol = re.match(regexion,mail)
 		if fol and name :	
 			c = shelve.open('DDRM3A2.dat')
-			del c[self.key]
+			try:
+				d = c[self.key]
+			except:
+				pass
+			else:	
+				del c[self.key]
 			c.close()
 			self.grant_grandfather.add_contact_permanency(name, mail)	
 			self.Close()
 		else :
-			RaisePopup('Set a valid mail','Please use a mail format')	
-			self.mail_camp.SetValue()		
+			RaisePopup('Validation Error','Please use a name and a mail')		
 class Add_Contact_PopUp(wx.Frame):
 	def __init__(self,parent):
 		super(Add_Contact_PopUp, self).__init__(None,style = wx.MINIMIZE_BOX  | wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX ,size = (300,200))
@@ -228,8 +233,8 @@ class Add_Contact_PopUp(wx.Frame):
 		self.Show()
 	def Simple_UI(self):
 		pan = wx.Panel(self)
-		bmp7 = wx.Bitmap("img/add.png", wx.BITMAP_TYPE_ANY)
-		bmp6 = wx.Image('img/add_contact.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		bmp7 = wx.Bitmap("img/res_icon/add.png", wx.BITMAP_TYPE_ANY)
+		bmp6 = wx.Image('img/res/add_contact.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 		pan.bitmap6 = wx.StaticBitmap(pan, -1, bmp6, (0, 0))
 		vbox = wx.BoxSizer(wx.VERTICAL)	
 		vbox.Add((-1,110))
@@ -280,7 +285,7 @@ class Gauger(wx.Frame):
 		self.Show(True)	
 	def GaugeBox(self):
 		panel = wx.Panel(self)
-		bmp2 = wx.Image('img/gauge.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		bmp2 = wx.Image('img/res/gauge.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 		panel.bitmap2 = wx.StaticBitmap(panel, -1, bmp2, (0, 0))
 		vbox = wx.BoxSizer(wx.VERTICAL)
 		hbox1 = wx.BoxSizer(wx.HORIZONTAL)
@@ -323,7 +328,7 @@ class RaiseAuth(wx.Frame):
 		self.Show()
 	def DialogUI(self):
 		pan = wx.Panel(self)
-		bmp2 = wx.Image('img/dialog.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		bmp2 = wx.Image('img/res/dialog.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 		pan.bitmap2 = wx.StaticBitmap(pan, -1, bmp2, (0, 0))
 		vbox = wx.BoxSizer(wx.VERTICAL)	
 		vbox.Add((-1,110))
@@ -444,7 +449,7 @@ class RaisePopup(wx.Frame):
 		self.Show()
 	def LittleUI(self):
 		panel = wx.Panel(self)
-		bmp6 = wx.Image('img/raise.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		bmp6 = wx.Image('img/res/raise.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 		panel.bitmap2 = wx.StaticBitmap(panel, -1, bmp6, (0, 0))
 		vbox = wx.BoxSizer(wx.VERTICAL)
 		hbox1 = wx.BoxSizer(wx.HORIZONTAL)
@@ -471,7 +476,7 @@ class SuccessPopup(wx.Frame):
 		self.Show()
 	def LittleUI(self):
 		panel = wx.Panel(self)
-		bmp6 = wx.Image('img/success.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		bmp6 = wx.Image('img/res/success.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 		panel.bitmap2 = wx.StaticBitmap(panel, -1, bmp6, (0, 0))
 		vbox = wx.BoxSizer(wx.VERTICAL)
 		hbox1 = wx.BoxSizer(wx.HORIZONTAL)
@@ -505,12 +510,12 @@ class Man_at_files(wx.Frame):
 		self.Show()
 		
 	def FrameUI(self):
-		self.bmp = wx.Bitmap("img/close.png", wx.BITMAP_TYPE_ANY)
+		self.bmp = wx.Bitmap("img/res_icon/close.png", wx.BITMAP_TYPE_ANY)
 		self.panel = wx.ScrolledWindow(self,-1,style = wx.VSCROLL)
 		self.panel.SetScrollbars(0, 1, 0, 1)
 		self.panel.SetScrollRate( 1, 1 ) 
 		self.box = wx.BoxSizer(wx.VERTICAL)
-		bmp3 = wx.Image('img/file_man.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		bmp3 = wx.Image('img/res/file_man.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 		self.panel.bitmap2 = wx.StaticBitmap(self.panel, -1, bmp3, (0, 0))
 		self.Boot()
 	def Boot(self):	
@@ -550,7 +555,7 @@ class Man_at_files(wx.Frame):
 				elif file_extension in ['doc','docx','rtf','txt','log']:
 					selection = 'doc'					 
 
-				self.file_bitmap = wx.Bitmap("img/file_"+selection+".png", wx.BITMAP_TYPE_PNG)		
+				self.file_bitmap = wx.Bitmap("img/res_icon/file_"+selection+".png", wx.BITMAP_TYPE_PNG)		
 				self.file_bitmap.SetSize((21,21))
 				self.file_b[path] = wx.StaticBitmap(self.panel, -1,  self.file_bitmap)
 				self.in_box[path].Add(self.file_b[path])
@@ -605,7 +610,7 @@ class Info(wx.Frame):
 			self.Show()
 		def InfoUI(self):
 			panel  = wx.Panel(self)
-			bmp5 = wx.Image('img/info.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+			bmp5 = wx.Image('img/res/info.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 			panel.bitmap2 = wx.StaticBitmap(panel, -1, bmp5, (0, 0))
 			vbox = wx.BoxSizer(wx.VERTICAL)	
 			vbox.Add((-1,110))
@@ -717,7 +722,7 @@ class Yubin(wx.Frame):
 		panel = wx.Panel(self)
 		box = wx.BoxSizer(wx.VERTICAL)
 
-		bmp1 = wx.Image('img/back.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+		bmp1 = wx.Image('img/res/back.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
 		panel.bitmap1 = wx.StaticBitmap(panel, -1, bmp1, (0, 0))
 		box.Add((-1,110))
 		#destiny
@@ -1015,11 +1020,16 @@ class Yubin(wx.Frame):
 					umail = umails.split("\n")
 					fol = re.match(regexion,umail[1])
 					if fol and umail[0]  :
-						if umails == data_r[-2]:
-							self.add_contact_permanency(umail[0].replace('username:','').strip().replace("\n",''),umail[1].strip().replace('mail:',''))
-							self.statbar.SetStatusText("Contact List Imported!")
-						else:
-							self.add_contact_permanency(umail[0].replace('username:','').strip().replace("\n",''),umail[1].strip().replace('mail:',''),False)
+						try:
+							g = data_r[-2]
+						except IndexError : 
+							pass 	 
+						else: 	 
+							if umails == data_r[-2]:
+								self.add_contact_permanency(umail[0].replace('username:','').strip().replace("\n",''),umail[1].strip().replace('mail:',''))
+								self.statbar.SetStatusText("Contact List Imported!")
+							else:
+								self.add_contact_permanency(umail[0].replace('username:','').strip().replace("\n",''),umail[1].strip().replace('mail:',''),False)
 
 		dlg.Destroy	
 	def on_export(self,e):
@@ -1158,7 +1168,7 @@ class Mail(object):
 					attach_thread.join()
 					if self.yeah_bool ==False:
 						RaisePopup('Where is the file?','File unavailable')
-						self.yeah_bool = True
+						progress_frame.add_to_gauge()
 					else:	
 						progress_frame.add_to_gauge()
 
@@ -1172,9 +1182,13 @@ class Mail(object):
 			send_thread.join()
 			progress_frame.add_to_gauge()	
 		if self.yeah_bool:
+
 			SuccessPopup()
+			self.parent.statbar.SetStatusText(str("Success at sending mail to " + self.reciever))
 		elif self.yeah_bool == False:
-			RaisePopup('File Load Too Big','Over Server Capacity')	
+			RaisePopup('Trouble to send','Error at sending mail')
+			self.parent.statbar.SetStatusText("Mail Error :(" )
+			progress_frame.Close()	
 	def assign_MIME(self):	
 		self.reciever =self.reciever.strip()
 		self.msg = MIMEMultipart('alternative')
@@ -1215,7 +1229,6 @@ class Mail(object):
 
 	def send(self):
 		try:
-			pass
 			self.smtpserver.sendmail(self.account,self.reciever, self.msg.as_string())
 		except smtplib.SMTPSenderRefused :	
 			self.yeah_bool= False
